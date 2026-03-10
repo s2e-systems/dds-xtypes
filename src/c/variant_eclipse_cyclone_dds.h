@@ -1,4 +1,11 @@
 #include "dds/dds.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/domtree.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/dynsub.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/print_sample.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/print_type.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/scan_sample.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/type_cache.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/xmltype.h"
 
 #define DDS_BOOLEAN_TRUE         (1)
 #define DDS_BOOLEAN_FALSE        (0)
@@ -38,131 +45,62 @@ const char* get_qos_policy_name(uint32_t last_policy_id) {
     }
 }
 
-dds_dynamic_type_t  *
+struct type*
 CREATE_TYPE( dds_entity_t dp,
-             const char * types_uri,
-             const char * type_name )
+             char * types_uri,
+             char * type_name )
 {
-  dds_dynamic_type_t* dt     = NULL;
+  struct type* xml_type = NULL;
   if ( dp && types_uri && type_name )
     {
-      DDS::DynamicTypeBuilderFactory * dtbf   =
-        DDS::DynamicTypeBuilderFactoryXml::get_instance( );
-      if ( dtbf )
-        {
-          DDS::DynamicTypeBuilder        * dtb  =
-            dtbf->create_type_w_uri ( types_uri,
-                                      type_name,
-                                      NULL );
-          if ( dtb )
-            {
-              dt = dtb->build( );
-              dtbf->delete_type_builder( dtb );
-            }
-        }
+      xml_type = dds_type_from_xml(dp, types_uri, type_name);
     }
-  return dt;
+  return xml_type;
 }
 
 dds_return_t
-REGISTER_TYPE( dds_entity_t        dp,
-               dds_dynamic_type_t* dt,
-               const char*         type_name )
-{
-  dds_return_t retval = DDS_RETCODE_ERROR;
-  if ( dp && dt && type_name )
-    {
-      DDS::DynamicTypeSupport * dts =
-        DDS::DynamicTypeSupport::create_type_support ( dt );
-      if ( dts )
-        {
-          retval = dts->register_type( dp, type_name );
-        }
-    }
-  return retval;
-}
-
-void
-CLEANUP_TYPE( dds_entity_t        dp,
-              dds_dynamic_type_t* dt )
-{
-  if ( dp && dt )
-    {
-      DDS::DynamicTypeBuilderFactory * dtbf   =
-        DDS::DynamicTypeBuilderFactoryXml::get_instance( );
-      dtbf->delete_type( dt );
-    }
-}
-
-DDS::DynamicData *
-CREATE_DATA( DDS::DynamicType       * dt )
-{
-  DDS::DynamicData * retval = NULL;
-  DDS::DynamicDataFactory * ddf = DDS::DynamicDataFactory::get_instance();
-  if ( ddf )
-    {
-      retval = ddf->create_data( dt );
-    }
-  return retval;
-}
-
-DDS::ReturnCode_t
-INIT_DATA( DDS::DynamicData    * dd,
+INIT_DATA( void               ** dd,
+           struct type         * dt,
            const char          * xml_data_uri,
            const char          * json_data_uri )
 {
-  DDS::ReturnCode_t              retval = DDS::RETCODE_ERROR;
+  dds_return_t retval = DDS_RETCODE_ERROR;
   if ( dd )
     {
       fflush( stderr );
       if ( xml_data_uri )
         {
-          retval = coredx::DynamicData_init_from_xmluri( dd, xml_data_uri );
+          struct elem* input = domtree_from_file( xml_data_uri );
+          *dd = scan_sample(input, &dt->typeobj->_u.complete);
+          if (*dd){
+            retval = DDS_RETCODE_OK;
+          }
         }
       else
         {
           /* no specific data, just init to 'defaults' */
           fprintf( stderr, "[ No data to load. Using empty sample... ]\n" );
           fflush( stderr );
-          retval = DDS::RETCODE_OK;
+          retval = DDS_RETCODE_ERROR;
         }
     }
   return retval;
 }
-   
-void
-PRINT_DATA( DDS::DynamicData  * dd )
-{
-  // coredx::DynamicData_print( stderr, dd, 0 );
-  coredx::DynamicData_print_xml( stdout, dd, 0 );
-}
 
-void CLEANUP_DATA(DDS::DynamicData *dd)
-{
-  DDS::DynamicDataFactory * ddf = DDS::DynamicDataFactory::get_instance();
-  ddf->delete_data( dd );
-}
-
-
-bool
-CHECK_DATA(DDS::DynamicData *dd,
-           const char *xml_data_uri,
-           const char *json_data_uri)
+bool CHECK_DATA(void        *dynamic_sample,
+                struct type *dt,
+                const char  *xml_data_uri,
+                const char  *json_data_uri)
 {
   bool retval = false;
 
-  if (dd == NULL && json_data_uri == NULL) {
+  if (dynamic_sample == NULL && xml_data_uri == NULL) {
     return retval;
   }
 
-  DDS::DynamicData *data_check =
-    CREATE_DATA( (DDS::DynamicType *) dd->get_type() );
-  
-  if (data_check == NULL) {
-    retval = false;
-    goto done;
-  }
-  if (INIT_DATA(data_check, xml_data_uri, json_data_uri) != DDS_RETCODE_OK) {
+  void* data_check = NULL;
+
+  if (INIT_DATA(&data_check, dt, xml_data_uri, json_data_uri) != DDS_RETCODE_OK) {
     retval = false;
     goto done;
   }
@@ -171,12 +109,12 @@ CHECK_DATA(DDS::DynamicData *dd,
   if ( !retval )
     {
       printf("Expected:\n");
-      PRINT_DATA( data_check );
+      print_sample( true, data_check, &dt->typeobj->_u.complete );
     }
   
  done:
   if (data_check != NULL) {
-    CLEANUP_DATA(data_check);
+    ddsrt_free(data_check);
   }
   return retval;
 }

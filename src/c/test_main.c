@@ -1020,7 +1020,7 @@ typedef struct TestApplication_s
     dds_entity_t topic;
     dds_entity_t dr;
     dds_entity_t dw;
-    dds_dynamic_type_t *dt;
+    struct type* dt;
     dds_topic_descriptor_t* td;
 
 } TestApplication;
@@ -1061,6 +1061,7 @@ void TestApplication_free(TestApplication *app)
 bool TestApplication_initialize(TestApplication *app, TestOptions *options)
 {
     dds_qos_t* dp_qos = dds_create_qos();
+    dds_return_t retcode;
 
     if (options->disable_type_info)
     {
@@ -1089,14 +1090,21 @@ bool TestApplication_initialize(TestApplication *app, TestOptions *options)
         PRINT_TYPEID(app->dt, options->type_object_version);
     }
 
-    if (REGISTER_TYPE(app->dp, app->dt, options->type_name) != DDS_RETCODE_OK)
+    if (dds_dynamic_type_register(app->dt->dtype, &app->dt->typeinfo) != DDS_RETCODE_OK)
     {
         log_message(ERROR, "failed to register type");
         return false;
     }
 
     printf("Create topic: %s\n", options->topic_name);
-    app->topic = dds_create_topic(app->dp, app->dt);
+
+    if (dds_create_topic_descriptor(DDS_FIND_SCOPE_LOCAL_DOMAIN, app->dp, app->dt->typeinfo, 0, &app->td) != DDS_RETCODE_OK)
+    {
+        log_message(ERROR, "failed to create topic descriptor");
+        return false;
+    }
+
+    app->topic = dds_create_topic(app->dp, app->td, options->topic_name, NULL, NULL);
     if (app->topic == 0)
     {
         log_message(ERROR, "failed to create topic");
@@ -1388,36 +1396,36 @@ bool TestApplication_init_subscriber(TestApplication *app, TestOptions *options)
 //-------------------------------------------------------------
 bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
 {
-    while (!all_done)
+    while (all_done != 0)
     {
         dds_return_t retval;
-        void* samples = malloc(sizeof(int*) * 10000);
+        void* samples[10000];
         for(int i = 0; i < 10000; i++)
         {
-            ((void**)samples)[i] = NULL;
+            samples[i] = NULL;
         }
         dds_sample_info_t* sample_infos = malloc(sizeof(dds_sample_info_t) * 10000);
 
         do
         {
             retval = dds_take(app->dr, 
-                              &samples, 
+                              samples, 
                               sample_infos, 
-                              sizeof(int *) * 10000, 
+                              10000, 
                               10000);
             if (retval >= 0)
             {
                 unsigned int i;
                 for (i = 0; i < retval; i++)
                 {
-                    DynamicData *sample = &samples[i];
+                    void* sample = samples[i];
                     dds_sample_info_t *sample_info = &sample_infos[i];
 
                     if (sample_info->valid_data)
                     {
                         printf("sample_received()\n");
-                        PRINT_DATA(sample);
-                        if (CHECK_DATA(sample, options->xml_data_uri, options->json_data_uri))
+                        print_sample(sample_info->valid_data, sample, &app->dt->typeobj->_u.complete);
+                        if (CHECK_DATA(sample, app->dt, options->xml_data_uri, options->json_data_uri))
                         {
                             printf("Received sample is the same as loaded\n");
                         }
@@ -1426,12 +1434,10 @@ bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
                             printf("Received sample is not the same as loaded\n");
                         }
                     }
+                    dds_return_loan(app->dr, &samples[i], 1);
                 }
-
             }
-            dds_return_loan(app->dr, &samples, 10000 * sizeof(int*));
         } while (retval >= 0);
-
         dds_sleepfor(DDS_USECS(100000));
     }
 
@@ -1441,14 +1447,8 @@ bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
 //-------------------------------------------------------------
 bool TestApplication_run_publisher(TestApplication *app, TestOptions *options)
 {
-    DDS::DynamicData *dd = CREATE_DATA(dt);
-    if (dd == NULL)
-    {
-        log_message(ERROR, "Error creating DynamicData");
-        return false;
-    }
-
-    if (INIT_DATA(dd, options->xml_data_uri, options->json_data_uri) != DDS_RETCODE_OK)
+    void* dynamic_sample = NULL;
+    if (INIT_DATA(&dynamic_sample, app->dt, options->xml_data_uri, options->json_data_uri) != DDS_RETCODE_OK)
     {
         log_message(ERROR, "Error initializing data");
         return false;
@@ -1456,16 +1456,15 @@ bool TestApplication_run_publisher(TestApplication *app, TestOptions *options)
 
     while (!all_done)
     {
-        DynamicDataWriter *ddw = dynamic_cast<DynamicDataWriter *>(dw);
-        ddw->write(*dd, HANDLE_NIL);
+        dds_write(app->dw, dynamic_sample);
         if (options->print_writer_samples)
         {
             printf(" Wrote:\n");
-            PRINT_DATA(dd);
+            print_sample(true, dynamic_sample, &app->dt->typeobj->_u.complete);
         }
         dds_sleepfor(DDS_USECS(1000000));
     }
-    CLEANUP_DATA(dd);
+    ddsrt_free(dynamic_sample);
     return true;
 }
 
