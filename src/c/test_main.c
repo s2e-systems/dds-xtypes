@@ -166,7 +166,7 @@ static char* to_string_type_consistency(dds_type_consistency_kind_t consistency_
 }
 
 /*************************************************************/
-Verbosity verbosity = ERROR;
+Verbosity verbosity = DEBUG;
 
 void log_message(Verbosity level_verbosity, const char *format, ...)
 {
@@ -289,6 +289,8 @@ TestOptions TestOptions_create()
     options.disable_type_info = false;
     options.type_object_version = 2;
     options.print_typeid = false;
+
+    return options;
 }
 
 //-------------------------------------------------------------
@@ -429,7 +431,7 @@ bool TestOptions_parse(TestOptions *options, int argc, char *argv[])
                 }
                 case 'e':
                 {
-                    verbosity = ERROR;
+                    verbosity = DEBUG;
                     break;
                 }
                 default:
@@ -578,11 +580,13 @@ bool TestOptions_parse(TestOptions *options, int argc, char *argv[])
         }
         case 'P':
         {
+            //printf("Publishing samples: %c\n", optarg[0]);
             options->publish = true;
             break;
         }
         case 'S':
         {
+            //printf("Subscribing samples: %c\n", optarg[0]);
             options->subscribe = true;
             break;
         }
@@ -1060,6 +1064,22 @@ void TestApplication_free(TestApplication *app)
 //-------------------------------------------------------------
 bool TestApplication_initialize(TestApplication *app, TestOptions *options)
 {
+    app->dp_listener = dds_create_listener(NULL);
+    dds_lset_inconsistent_topic(app->dp_listener, on_inconsistent_topic);
+    dds_lset_offered_incompatible_qos(app->dp_listener, on_offered_incompatible_qos);
+    dds_lset_publication_matched(app->dp_listener, on_publication_matched);
+    dds_lset_offered_deadline_missed(app->dp_listener, on_offered_deadline_missed);
+    dds_lset_liveliness_lost(app->dp_listener, on_liveliness_lost);
+    dds_lset_requested_incompatible_qos(app->dp_listener, on_requested_incompatible_qos);
+    dds_lset_subscription_matched(app->dp_listener, on_subscription_matched);
+    dds_lset_requested_deadline_missed(app->dp_listener, on_requested_deadline_missed);
+    dds_lset_liveliness_changed(app->dp_listener, on_liveliness_changed);
+    dds_lset_sample_rejected(app->dp_listener, on_sample_rejected);
+    dds_lset_data_available(app->dp_listener, on_data_available);
+    dds_lset_sample_lost(app->dp_listener,on_sample_lost);
+    dds_lset_data_on_readers(app->dp_listener, on_data_on_readers);
+
+
     dds_qos_t* dp_qos = dds_create_qos();
     dds_return_t retcode;
 
@@ -1070,7 +1090,7 @@ bool TestApplication_initialize(TestApplication *app, TestOptions *options)
 
     //set_type_object_version(dp_qos, options->type_object_version);
 
-    app->dp = dds_create_participant(options->domain_id, dp_qos, NULL);
+    app->dp = dds_create_participant(options->domain_id, dp_qos, app->dp_listener);
     if (app->dp == 0)
     {
         log_message(ERROR, "failed to create participant (missing license?).");
@@ -1090,11 +1110,11 @@ bool TestApplication_initialize(TestApplication *app, TestOptions *options)
         PRINT_TYPEID(app->dt, options->type_object_version);
     }
 
-    if (dds_dynamic_type_register(app->dt->dtype, &app->dt->typeinfo) != DDS_RETCODE_OK)
-    {
-        log_message(ERROR, "failed to register type");
-        return false;
-    }
+    //if ((retcode = dds_dynamic_type_register(app->dt->dtype, &app->dt->typeinfo)) != DDS_RETCODE_OK)
+    //{
+    //    log_message(ERROR, "failed to register type: %s", dds_strretcode(retcode));
+    //    return false;
+    //}
 
     printf("Create topic: %s\n", options->topic_name);
 
@@ -1396,7 +1416,7 @@ bool TestApplication_init_subscriber(TestApplication *app, TestOptions *options)
 //-------------------------------------------------------------
 bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
 {
-    while (all_done != 0)
+    while (!all_done)
     {
         dds_return_t retval;
         void* samples[10000];
@@ -1473,15 +1493,13 @@ int main(int argc, char *argv[])
 {
     install_sig_handlers();
 
-    TestOptions options;
-    TestOptions_create(&options);
+    TestOptions options = TestOptions_create();
     bool parseResult = TestOptions_parse(&options, argc, argv);
     if (!parseResult)
     {
         exit(ERROR_PARSING_ARGUMENTS);
     }
-    TestApplication testApp;
-    TestApplication_create(&testApp);
+    TestApplication testApp = TestApplication_create();
     if (!TestApplication_initialize(&testApp, &options))
     {
         exit(ERROR_INITIALIZING);

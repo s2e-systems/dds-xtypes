@@ -2,7 +2,9 @@
 #include "dds/../../share/CycloneDDS/examples/dynsub/domtree.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/dynsub.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/print_sample.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/compare_samples.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/print_type.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/type_cache.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/scan_sample.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/type_cache.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/xmltype.h"
@@ -105,9 +107,10 @@ bool CHECK_DATA(void        *dynamic_sample,
     goto done;
   }
 
-  retval = dd->equals(data_check);
-  if ( !retval )
+  retval = compare_samples(true, dynamic_sample, data_check, &dt->typeobj->_u.complete);
+  if ( retval <= 0 )
     {
+      printf("%d: ", retval);
       printf("Expected:\n");
       print_sample( true, data_check, &dt->typeobj->_u.complete );
     }
@@ -117,4 +120,23 @@ bool CHECK_DATA(void        *dynamic_sample,
     ddsrt_free(data_check);
   }
   return retval;
+}
+
+void
+CLEANUP_TYPE( dds_entity_t dp,
+              struct type* dt )
+{
+  if ( dp && dt )
+    {
+      dds_free_xml_type(dt);
+    }
+}
+
+void PRINT_TYPEID(struct type *dt, int version) {
+    const DDS_XTypes_EquivalenceHash *id = &((DDS_XTypes_TypeInformation *)dt->typeinfo)->complete.typeid_with_size.type_id._u.equivalence_hash;
+    printf("Type Object V%d - Type ID: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", version,
+             (unsigned) (*id)[0], (unsigned) (*id)[1], (unsigned) (*id)[2], (unsigned) (*id)[3],
+             (unsigned) (*id)[4], (unsigned) (*id)[5], (unsigned) (*id)[6], (unsigned) (*id)[7],
+             (unsigned) (*id)[8], (unsigned) (*id)[9], (unsigned) (*id)[10], (unsigned) (*id)[11],
+             (unsigned) (*id)[12], (unsigned) (*id)[13]);
 }
