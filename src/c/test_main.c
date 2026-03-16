@@ -915,6 +915,13 @@ void on_inconsistent_topic(dds_entity_t topic, const dds_inconsistent_topic_stat
 
 void on_offered_incompatible_qos(dds_entity_t dw, const dds_offered_incompatible_qos_status_t status, void* args)
 {
+    if (status.last_policy_id == DDS_TYPE_CONSISTENCY_ENFORCEMENT_QOS_POLICY_ID){
+        dds_inconsistent_topic_status_t topic_status;
+        topic_status.total_count = 0;
+        topic_status.total_count_change = 0;
+        on_inconsistent_topic(dds_get_topic(dw), topic_status, args);
+        return;
+    }
     dds_entity_t topic = dds_get_topic(dw);
     char* topic_name = helper_get_topic_name(topic);
     char* type_name = helper_get_type_name(topic);
@@ -963,6 +970,13 @@ void on_liveliness_lost(dds_entity_t dw, const dds_liveliness_lost_status_t stat
 
 void on_requested_incompatible_qos(dds_entity_t dr, const dds_requested_incompatible_qos_status_t status, void* args)
 {
+    if (status.last_policy_id == DDS_TYPE_CONSISTENCY_ENFORCEMENT_QOS_POLICY_ID){
+        dds_inconsistent_topic_status_t topic_status;
+        topic_status.total_count = 0;
+        topic_status.total_count_change = 0;
+        on_inconsistent_topic(dds_get_topic(dr), topic_status, args);
+        return;
+    }
     dds_entity_t topic = dds_get_topic(dr);
     char* topic_name = helper_get_topic_name(topic);
     char* type_name = helper_get_type_name(topic);
@@ -1254,6 +1268,38 @@ bool TestApplication_init_publisher(TestApplication *app, TestOptions *options)
             log_message(DEBUG, "    HistoryDepth = %d", history_depth);
         }
     }
+
+    dds_qset_type_consistency(
+        dw_qos, 
+        options->type_consistency_kind,
+        options->ignore_sequence_bounds,
+        options->ignore_string_bounds,
+        options->ignore_member_names,
+        options->prevent_type_widening,
+        options->force_type_validation);
+    {
+        dds_type_consistency_kind_t type_consistency_kind;
+        bool ignore_sequence_bounds;
+        bool ignore_string_bounds;
+        bool ignore_member_names;
+        bool prevent_type_widening;
+        bool force_type_validation;
+
+        dds_qget_type_consistency(
+            dw_qos,
+            &type_consistency_kind,
+            &ignore_sequence_bounds,
+            &ignore_string_bounds,
+            &ignore_member_names,
+            &prevent_type_widening,
+            &force_type_validation);
+        log_message(DEBUG, "    TypeConsistency * kind = %s", to_string_type_consistency(type_consistency_kind));
+        log_message(DEBUG, "                    * ignore_sequence_bounds = %d", ignore_sequence_bounds);
+        log_message(DEBUG, "                    * ignore_string_bounds   = %d", ignore_string_bounds);
+        log_message(DEBUG, "                    * ignore_member_names    = %d", ignore_member_names);
+        log_message(DEBUG, "                    * prevent_type_widening  = %d", prevent_type_widening);
+        log_message(DEBUG, "                    * force_type_validation  = %d", force_type_validation);
+    }    
 
     printf("Create writer for topic: %s type: %s\n", options->topic_name, options->type_name);
 
