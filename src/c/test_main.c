@@ -695,7 +695,7 @@ bool TestOptions_parse(TestOptions *options, int argc, char *argv[])
                     options->ignore_sequence_bounds = DDS_BOOLEAN_FALSE;
                     break;
                 case 'd':
-                    options->ignore_sequence_bounds = DDS_BOOLEAN_FALSE;
+                    options->ignore_sequence_bounds = DDS_BOOLEAN_TRUE;
                     break;
                 default:
                     log_message(ERROR, "unrecognized value for type_consistency."
@@ -719,7 +719,7 @@ bool TestOptions_parse(TestOptions *options, int argc, char *argv[])
                     options->ignore_string_bounds = DDS_BOOLEAN_FALSE;
                     break;
                 case 'd':
-                    options->ignore_string_bounds = DDS_BOOLEAN_FALSE;
+                    options->ignore_string_bounds = DDS_BOOLEAN_TRUE;
                     break;
                 default:
                     log_message(ERROR, "unrecognized value for type_consistency."
