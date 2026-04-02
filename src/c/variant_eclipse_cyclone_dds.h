@@ -1,13 +1,11 @@
 #include "dds/dds.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/dyntypelib.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/domtree.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/dynsub.h"
-#include "dds/../../share/CycloneDDS/examples/dynsub/print_sample.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/compare_samples.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/print_type.h"
 #include "dds/../../share/CycloneDDS/examples/dynsub/type_cache.h"
-#include "dds/../../share/CycloneDDS/examples/dynsub/scan_sample.h"
-#include "dds/../../share/CycloneDDS/examples/dynsub/type_cache.h"
-#include "dds/../../share/CycloneDDS/examples/dynsub/xmltype.h"
+#include "dds/../../share/CycloneDDS/examples/dynsub/size_and_align.h"
 
 #define DDS_BOOLEAN_TRUE         (1)
 #define DDS_BOOLEAN_FALSE        (0)
@@ -47,22 +45,11 @@ const char* get_qos_policy_name(uint32_t last_policy_id) {
     }
 }
 
-struct type*
-CREATE_TYPE( dds_entity_t dp,
-             char * types_uri,
-             char * type_name )
-{
-  struct type* xml_type = NULL;
-  if ( dp && types_uri && type_name )
-    {
-      xml_type = dds_type_from_xml(dp, types_uri, type_name);
-    }
-  return xml_type;
-}
 
 dds_return_t
 INIT_DATA( void               ** dd,
-           struct type         * dt,
+           struct dyntypelib   * dtl,
+           struct dyntype      * dt,
            const char          * xml_data_uri,
            const char          * json_data_uri )
 {
@@ -73,7 +60,8 @@ INIT_DATA( void               ** dd,
       if ( xml_data_uri )
         {
           struct elem* input = domtree_from_file( xml_data_uri );
-          *dd = scan_sample(input, &dt->typeobj->_u.complete);
+          struct dyntypelib_error err;
+          *dd = dtl_scan_sample(dtl, input, &dt->typeobj->_u.complete, true, &err);
           if (*dd){
             retval = DDS_RETCODE_OK;
           }
@@ -90,7 +78,8 @@ INIT_DATA( void               ** dd,
 }
 
 bool CHECK_DATA(void        *dynamic_sample,
-                struct type *dt,
+                struct dyntypelib *dtl,
+                struct dyntype    *dt,
                 const char  *xml_data_uri,
                 const char  *json_data_uri)
 {
@@ -102,17 +91,17 @@ bool CHECK_DATA(void        *dynamic_sample,
 
   void* data_check = NULL;
 
-  if (INIT_DATA(&data_check, dt, xml_data_uri, json_data_uri) != DDS_RETCODE_OK) {
+  if (INIT_DATA(&data_check, dtl, dt, xml_data_uri, json_data_uri) != DDS_RETCODE_OK) {
     retval = false;
     goto done;
   }
 
-  retval = compare_samples(true, dynamic_sample, data_check, &dt->typeobj->_u.complete);
+  retval = compare_samples(dtl->typecache, true, dynamic_sample, data_check, &dt->typeobj->_u.complete);
   if ( retval <= 0 )
     {
       printf("%d: ", retval);
       printf("Expected:\n");
-      print_sample( true, data_check, &dt->typeobj->_u.complete );
+      dtl_print_sample(dtl, true, data_check, &dt->typeobj->_u.complete );
     }
   
  done:
@@ -122,17 +111,7 @@ bool CHECK_DATA(void        *dynamic_sample,
   return retval;
 }
 
-void
-CLEANUP_TYPE( dds_entity_t dp,
-              struct type* dt )
-{
-  if ( dp && dt )
-    {
-      dds_free_xml_type(dt);
-    }
-}
-
-void PRINT_TYPEID(struct type *dt, int version) {
+void PRINT_TYPEID(struct dyntype *dt, int version) {
     const DDS_XTypes_EquivalenceHash *id = &((DDS_XTypes_TypeInformation *)dt->typeinfo)->complete.typeid_with_size.type_id._u.equivalence_hash;
     printf("Type Object V%d - Type ID: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", version,
              (unsigned) (*id)[0], (unsigned) (*id)[1], (unsigned) (*id)[2], (unsigned) (*id)[3],

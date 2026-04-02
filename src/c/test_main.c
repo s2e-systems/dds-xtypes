@@ -1038,7 +1038,10 @@ typedef struct TestApplication_s
     dds_entity_t topic;
     dds_entity_t dr;
     dds_entity_t dw;
-    struct type* dt;
+
+    struct dyntypelib *dtl;
+    struct dyntypelib_error err;
+    struct dyntype* dt;
     dds_topic_descriptor_t* td;
 
 } TestApplication;
@@ -1059,7 +1062,9 @@ TestApplication TestApplication_create()
     app.topic = 0;
     app.dr = 0;
     app.dw = 0;
+    app.dtl = NULL;
     app.dt = NULL;
+    app.td = NULL;
 
     return app;
 }
@@ -1070,7 +1075,7 @@ void TestApplication_free(TestApplication *app)
     if (app->dp_listener)
         dds_delete_listener(app->dp_listener);
     if (app->dt)
-        CLEANUP_TYPE(app->dp, app->dt);
+        dtl_free(app->dtl);
     if (app->dp)
         dds_delete(app->dp);
 }
@@ -1111,8 +1116,17 @@ bool TestApplication_initialize(TestApplication *app, TestOptions *options)
         return false;
     }
     log_message(DEBUG, "Participant created");
+    
+    app->dtl = dtl_new(app->dp);
+    dtl_set_print_types (app->dtl, true);
+    if (dtl_add_xml_type_library (app->dtl, options->types_uri, &app->err) != DDS_RETCODE_OK)
+    {
+        log_message(ERROR, "failed to create type");
+        log_message(DEBUG, "errmsg: %s", app->err.errmsg);
+        return false;
+    }
 
-    app->dt = CREATE_TYPE(app->dp, options->types_uri, options->type_name);
+    app->dt = dtl_lookup_typename(app->dtl, options->type_name);
     if (app->dt == NULL)
     {
         log_message(ERROR, "failed to create type");
@@ -1139,7 +1153,7 @@ bool TestApplication_initialize(TestApplication *app, TestOptions *options)
     }
 
     app->topic = dds_create_topic(app->dp, app->td, options->topic_name, NULL, NULL);
-    if (app->topic == 0)
+    if (app->topic < 0)
     {
         log_message(ERROR, "failed to create topic");
         return false;
@@ -1166,7 +1180,6 @@ bool TestApplication_run(TestApplication *app, TestOptions *options)
     {
         return TestApplication_run_subscriber(app, options);
     }
-    CLEANUP_TYPE(app->dp, app->dt);
     return false;
 }
 
@@ -1305,11 +1318,14 @@ bool TestApplication_init_publisher(TestApplication *app, TestOptions *options)
 
     app->dw = dds_create_writer(app->pub, app->topic, dw_qos, NULL);
 
-    if (app->dw == 0)
+    if (app->dw < 0)
     {
         log_message(ERROR, "failed to create datawriter");
         return false;
     }
+
+    size_t align, size;
+    build_typecache_to (app->dtl->typecache, &app->dt->typeobj->_u.complete, &align, &size);
 
     log_message(DEBUG, "Data Writer created");
 
@@ -1455,6 +1471,9 @@ bool TestApplication_init_subscriber(TestApplication *app, TestOptions *options)
         return false;
     }
 
+    size_t align, size;
+    build_typecache_to (app->dtl->typecache, &app->dt->typeobj->_u.complete, &align, &size);
+
     log_message(DEBUG, "Data Reader created");
     return true;
 }
@@ -1462,6 +1481,7 @@ bool TestApplication_init_subscriber(TestApplication *app, TestOptions *options)
 //-------------------------------------------------------------
 bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
 {
+    log_message(DEBUG, "Run subscriber");
     while (!all_done)
     {
         dds_return_t retval;
@@ -1490,8 +1510,8 @@ bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
                     if (sample_info->valid_data)
                     {
                         printf("sample_received()\n");
-                        print_sample(sample_info->valid_data, sample, &app->dt->typeobj->_u.complete);
-                        if (CHECK_DATA(sample, app->dt, options->xml_data_uri, options->json_data_uri))
+                        dtl_print_sample(app->dtl, sample_info->valid_data, sample, &app->dt->typeobj->_u.complete);
+                        if (CHECK_DATA(sample, app->dtl, app->dt, options->xml_data_uri, options->json_data_uri))
                         {
                             printf("Received sample is the same as loaded\n");
                         }
@@ -1514,7 +1534,7 @@ bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
 bool TestApplication_run_publisher(TestApplication *app, TestOptions *options)
 {
     void* dynamic_sample = NULL;
-    if (INIT_DATA(&dynamic_sample, app->dt, options->xml_data_uri, options->json_data_uri) != DDS_RETCODE_OK)
+    if (INIT_DATA(&dynamic_sample, app->dtl, app->dt, options->xml_data_uri, options->json_data_uri) != DDS_RETCODE_OK)
     {
         log_message(ERROR, "Error initializing data");
         return false;
@@ -1526,7 +1546,7 @@ bool TestApplication_run_publisher(TestApplication *app, TestOptions *options)
         if (options->print_writer_samples)
         {
             printf(" Wrote:\n");
-            print_sample(true, dynamic_sample, &app->dt->typeobj->_u.complete);
+            dtl_print_sample(app->dtl, true, dynamic_sample, &app->dt->typeobj->_u.complete);
         }
         dds_sleepfor(DDS_USECS(1000000));
     }
