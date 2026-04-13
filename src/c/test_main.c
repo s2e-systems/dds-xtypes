@@ -1383,6 +1383,9 @@ bool TestApplication_init_subscriber(TestApplication *app, TestOptions *options)
     {
         dds_qset_ownership(dr_qos, DDS_OWNERSHIP_EXCLUSIVE);
         dds_qset_ownership_strength(dr_qos, options->ownership_strength);
+    } else
+    {
+        dds_qset_ownership(dr_qos, DDS_OWNERSHIP_SHARED);
     }
     {
         dds_ownership_kind_t ownership;
@@ -1499,7 +1502,7 @@ bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
                               sample_infos, 
                               10000, 
                               10000);
-            if (retval >= 0)
+            if (retval > 0)
             {
                 unsigned int i;
                 for (i = 0; i < retval; i++)
@@ -1523,7 +1526,7 @@ bool TestApplication_run_subscriber(TestApplication *app, TestOptions *options)
                     dds_return_loan(app->dr, &samples[i], 1);
                 }
             }
-        } while (retval >= 0);
+        } while (retval > 0);
         dds_sleepfor(DDS_USECS(100000));
     }
 
