@@ -9,7 +9,7 @@
 from rtps_test_utilities import ReturnCode
 import test_suite_functions as tsf
 
-xtypes_v2_extensibility_rules = {
+xtypes_v2_extensibility_test_suite = {
     'ext_final_struct_1' : {
         'common_args' : ['-X xml/types/extensibility.xml'],
         'apps' : ['pub-exe -P -t test -y Test::struct_f1 -V xml/data/struct_1.xml -J json/data/struct_num_x1.json',
@@ -140,7 +140,7 @@ xtypes_v2_extensibility_rules = {
 }
 
 
-xtypes_v2_type_consistency_rules = {
+xtypes_v2_type_consistency_test_suite = {
     'tc_force_type_validation_1' : {
         'apps' : ['pub-exe -P -t test -X xml/types/type_consistency.xml                -y Test::struct_x1 -V xml/data/struct_num_x1.xml -J json/data/struct_num_x1.json --disable-type-info',
                   'sub-exe -S -t test -X xml/types/type_consistency_force_type_val.xml -y Test::struct_x1 -V xml/data/struct_num_x1.xml -J json/data/struct_num_x1.json --force-type-validation t --disable-type-info'],
@@ -402,7 +402,7 @@ xtypes_v2_type_consistency_rules = {
 }
 
 
-xtypes_v2_array_rules = {
+xtypes_v2_array_test_suite = {
     'int32[10]' : {
         'common_args' : ['-X xml/types/arrays.xml'],
         'apps' : ['pub-exe -P -t test -y Test::int32x10 -V xml/data/array_num_10.xml -J json/data/array_num_10.json',
@@ -524,7 +524,7 @@ xtypes_v2_array_rules = {
 
 }
 
-xtypes_v2_sequence_rules = {
+xtypes_v2_sequence_test_suite = {
 
     'seq(int32)_seq(int32,10)' : {
         'common_args' : ['-X xml/types/sequences.xml'],
@@ -669,7 +669,7 @@ xtypes_v2_sequence_rules = {
 
 }
 
-xtypes_v2_string_rules = {
+xtypes_v2_string_test_suite = {
     'string_string' : {
         'common_args' : ['-X xml/types/strings.xml'],
         'apps' : ['pub-exe -P -t test -y Test::string -V xml/data/strings.xml -J json/data/strings.json',
@@ -880,7 +880,7 @@ xtypes_v2_struct_test_suite = {
     'struct_different_ids_ok': {
         'common_args': ['-X xml/types/struct_names.xml'],
         'apps': ['pub-exe -P -t test -y Test::struct_1 -V xml/data/struct_num_x1_x5.xml -J json/data/struct_num_x1_x5.json',
-                 'sub-exe -S -t test -y Test::struct_2 -V xml/data/struct_num_x1_x5.xml -J json/data/struct_num_x5.json'],
+                 'sub-exe -S -t test -y Test::struct_2 -V xml/data/struct_num_x5.xml -J json/data/struct_num_x5.json'],
         'expected_codes': [ReturnCode.OK, ReturnCode.OK],
         'check_function': tsf.data_is_correct,
         'title': '',
@@ -1140,7 +1140,7 @@ xtypes_v2_struct_test_suite = {
     # ad nauseam...
 }
 
-xtypes_v2_union_rules = {
+xtypes_v2_union_test_suite = {
 
     'union_primitives_final' : {
         'common_args' : ['-X xml/types/unions.xml'],
@@ -3201,7 +3201,7 @@ xtypes_v2_primitive_test_suite = {
     # 'struct_float128_float128': [ 'xml/types/primitives.xml', 'xml/data/struct_primitives.xml', ['-P -y Test::struct_primitive_float128', '-S -y Test::struct_primitive_float128' ], [ReturnCode.OK, ReturnCode.OK] ],
 }
 
-xtypes_v2_tryconstruct_rules = {
+xtypes_v2_tryconstruct_test_suite = {
     'tryc_seq_1' : {
         'common_args' : ['-X xml/types/try_construct.xml'],
         'apps' : ['pub-exe -P -t test -y Test::seq_int32x20 -V xml/data/array_num_20.xml -J json/data/array_num_20.json',
