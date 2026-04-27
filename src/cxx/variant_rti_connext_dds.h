@@ -83,17 +83,25 @@ void print_type_objectV1(DDS::DynamicType *dt) {
 
 void print_type_objectV2(DDS::DynamicType *dt) {
     DDS_TypeObjectV2EquivalenceHash completeHash;
+    DDS_TypeObjectV2EquivalenceHash minimalHash;
     DDS_TypeObjectV2 *type_object_v2 =
-            DDS_TypeObjectV2_create_from_typecode(dt, &completeHash);
+            DDS_TypeObjectV2_create_from_typecode(dt, &completeHash, &minimalHash);
     if (type_object_v2 == NULL) {
         std::cerr << "Failed to create Type Object V2 from TypeCode" << std::endl;
         return;
     }
 
-    std::cout << "Type Object V2 - Equivalence Hash: ";
+    std::cout << "Complete Type Object V2 - Equivalence Hash: ";
     for (size_t i = 0; i < DDS_TYPEOBJECTV2_EQUIVALENCE_HASH_SIZE; ++i) {
         // print the hash (array of octets) in hexadecimal readable format
         std::cout << std::hex << static_cast<int>(completeHash[i]);
+    }
+    std::cout << std::endl;
+
+    std::cout << "Minimal Type Object V2 - Equivalence Hash: ";
+    for (size_t i = 0; i < DDS_TYPEOBJECTV2_EQUIVALENCE_HASH_SIZE; ++i) {
+        // print the hash (array of octets) in hexadecimal readable format
+        std::cout << std::hex << static_cast<int>(minimalHash[i]);
     }
     std::cout << std::endl;
 
