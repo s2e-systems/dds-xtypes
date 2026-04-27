@@ -623,7 +623,7 @@ class Arguments:
                 'in the stdout. (Default: False).')
         optional.add_argument('-x','--data-representation',
             default="2",
-            required=None,
+            required=False,
             type=str,
             choices=["1","2"],
             help='Data Representation used if no provided when running the '
@@ -633,7 +633,7 @@ class Arguments:
                 'Default value 2.')
         optional.add_argument('--type-object-version',
             default="2",
-            required=None,
+            required=False,
             type=str,
             choices=["1","2"],
             help='Type Object version used if not provided when running the '
