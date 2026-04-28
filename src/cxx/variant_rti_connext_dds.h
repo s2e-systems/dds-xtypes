@@ -50,19 +50,19 @@ void disable_type_information(DDS::DomainParticipantQos &dp_qos)
     dp_qos.resource_limits.type_code_max_serialized_length = 0;
     dp_qos.resource_limits.type_object_max_serialized_length = 0;
     dp_qos.discovery_config.enabled_builtin_channels =
-                DDS_DISCOVERYCONFIG_BUILTIN_CHANNEL_MASK_DEFAULT;
+                DDS_DISCOVERYCONFIG_BUILTIN_CHANNEL_MASK_NONE;
 }
 
 void set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
 {
     if (version == 1) {
         dp_qos.discovery_config.enabled_builtin_channels =
-                DDS_DISCOVERYCONFIG_BUILTIN_CHANNEL_MASK_DEFAULT;
+                DDS_DISCOVERYCONFIG_BUILTIN_CHANNEL_MASK_NONE;
         dp_qos.resource_limits.type_object_max_serialized_length = 8192;
     } else if (version == 2) {
         dp_qos.discovery_config.enabled_builtin_channels =
                 DDS_DISCOVERYCONFIG_TYPE_LOOKUP_SERVICE_CHANNEL;
-        dp_qos.resource_limits.type_object_max_serialized_length = 0;
+        dp_qos.resource_limits.type_object_max_serialized_length = DDS_LENGTH_AUTO;
     } else {
         std::cerr << "Unsupported Type Object version: " << version
                 << ". Using default." << std::endl;
