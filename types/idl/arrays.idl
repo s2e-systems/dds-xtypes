@@ -1,0 +1,160 @@
+module Test {
+
+  @final
+  struct int32x10 {
+    int32 x1[10];
+  };
+
+
+  @final
+  struct int32x10x2 {
+    int32 x1[10][2];
+  };
+
+
+  @final
+  struct int32x20 {
+    int32 x1[20];
+  };
+
+
+  @final
+  struct uint32x10 {
+    uint32 x1[10];
+  };
+
+
+  @final
+  struct uint32x20 {
+    uint32 x1[20];
+  };
+
+
+  @final
+  struct string10x10 {
+    string<10> x1[10];
+  };
+
+
+  @final
+  struct string20x10 {
+    string<20> x1[10];
+  };
+
+  @appendable
+  enum E1 {
+    @value(0)
+    VAL0,
+    @value(1)
+    VAL1,
+    @value(2)
+    VAL2
+  };
+  @appendable
+  enum E2 {
+    @value(0)
+    VAL0,
+    @value(1)
+    VAL1,
+    @value(2)
+    VAL2,
+    @value(3)
+    VAL3
+  };
+
+  @final
+  struct enum1 {
+    Test::E1 x1;
+  };
+
+
+  @final
+  struct enum2 {
+    Test::E2 x1;
+  };
+
+
+  @final
+  struct enum1x10 {
+    Test::E1 x1[10];
+  };
+
+
+  @final
+  struct enum2x10 {
+    Test::E2 x1[10];
+  };
+
+
+  @final
+  struct F_S__array20_uint32 {
+    uint32 x1[20];
+  };
+
+
+  @final
+  struct F_S__array20_uint32_alt {
+    uint32 altx1[20];
+  };
+
+
+  @appendable
+  struct A_S__array20_uint32 {
+    uint32 x1[20];
+  };
+
+
+  @appendable
+  struct A_S__array20_uint32_alt {
+    uint32 altx1[20];
+  };
+
+
+  @mutable
+  struct M_S__array20_uint32 {
+    uint32 x1[20];
+  };
+
+
+  @mutable
+  struct M_S__array20_uint32_alt {
+    uint32 altx1[20];
+  };
+
+
+  @final
+  struct F_S__array10_F_S__array20_uint32 {
+    Test::F_S__array20_uint32 x1[10];
+  };
+
+
+  @final
+  struct F_S__array10_F_S__array20_uint32_alt {
+    Test::F_S__array20_uint32_alt altx1[10];
+  };
+
+
+  @final
+  struct F_S__array10_A_S__array20_uint32 {
+    Test::A_S__array20_uint32 x1[10];
+  };
+
+
+  @final
+  struct F_S__array10_A_S__array20_uint32_alt {
+    Test::A_S__array20_uint32_alt altx1[10];
+  };
+
+
+  @mutable
+  struct F_S__array10_M_S__array20_uint32 {
+    Test::M_S__array20_uint32 x1[10];
+  };
+
+
+  @mutable
+  struct F_S__array10_M_S__array20_uint32_alt {
+    Test::M_S__array20_uint32_alt altx1[10];
+  };
+
+};

@@ -1,0 +1,397 @@
+module Test {
+
+  @final
+  union union_primitives_final switch (uint8) {
+    case 0x01:
+      octet x1;
+    case 0x02:
+      uint16 x2;
+    case 0x03:
+      uint32 x3;
+    case 0x04:
+      uint64 x4;
+    case 0x05:
+      char x5;
+    case 0x06:
+      int16 x6;
+    case 0x07:
+      int32 x7;
+    case 0x08:
+      int64 x8;
+    case 0x09:
+      boolean x9;
+    case 0x0a:
+      float x10;
+    case 0x0b:
+      double x11;
+    case 0x0c:
+      double x12;
+  };
+
+
+  @appendable
+  union union_primitives_appendable switch (uint8) {
+    case 0x01:
+      octet x1;
+    case 0x02:
+      uint16 x2;
+    case 0x03:
+      uint32 x3;
+    case 0x04:
+      uint64 x4;
+    case 0x05:
+      char x5;
+    case 0x06:
+      int16 x6;
+    case 0x07:
+      int32 x7;
+    case 0x08:
+      int64 x8;
+    case 0x09:
+      boolean x9;
+    case 0x0a:
+      float x10;
+    case 0x0b:
+      double x11;
+    case 0x0c:
+      double x12;
+  };
+
+
+  @mutable
+  union union_primitives_mutable switch (uint8) {
+    case 0x01:
+      octet x1;
+    case 0x02:
+      uint16 x2;
+    case 0x03:
+      uint32 x3;
+    case 0x04:
+      uint64 x4;
+    case 0x05:
+      char x5;
+    case 0x06:
+      int16 x6;
+    case 0x07:
+      int32 x7;
+    case 0x08:
+      int64 x8;
+    case 0x09:
+      boolean x9;
+    case 0x0a:
+      float x10;
+    case 0x0b:
+      double x11;
+    case 0x0c:
+      double x12;
+  };
+
+
+  @appendable
+  union union_uint32 switch (uint32) {
+    case 2:
+      int16 x1;
+    case 1:
+      int32 x2;
+  };
+
+
+  @appendable
+  union union_1 switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_2 switch (uint32) {
+    case 2:
+      int32 x2;
+    case 1:
+      int16 x1;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_3 switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_4 switch (uint32) {
+    case 1:
+      int16 x2;
+    case 2:
+      int32 x1;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_5 switch (uint32) {
+    case 1:
+      @id(1)
+        int16 x1;
+    case 2:
+      @id(2)
+        int32 x2;
+    case 3:
+      @id(3)
+        int32 x3;
+  };
+
+
+  @appendable
+  union union_6 switch (uint32) {
+    case 2:
+      @id(2)
+        int32 x2;
+    case 1:
+      @id(1)
+        int16 x1;
+    case 3:
+      @id(3)
+        int32 x3;
+  };
+
+
+  @appendable
+  union union_int16 switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int16 x2;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_int32 switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_int32_default switch (uint32) {
+    case 1:
+      int16 x1;
+    default:
+      int32 x2;
+    case 3:
+      int32 x3;
+  };
+
+
+  @appendable
+  union union_int16_default switch (uint32) {
+    case 1:
+      int16 x1;
+    default:
+      int16 x2;
+    case 3:
+      int32 x3;
+  };
+
+
+  @final
+  union union_final_5 switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int64 x3;
+    case 4:
+      uint16 x4;
+    case 5:
+      uint32 x5;
+  };
+
+
+  @final
+  union union_final_5_default switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int64 x3;
+    case 4:
+      uint16 x4;
+    case 5:
+      uint32 x5;
+    default:
+      uint32 DeFault;
+  };
+
+
+  @final
+  union union_final_6 switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int64 x3;
+    case 4:
+      uint16 x4;
+    case 5:
+      uint32 x5;
+    case 0:
+      uint64 x0;
+  };
+
+
+  @appendable
+  union union_appendable_a switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int64 x3;
+    case 4:
+      uint16 x4;
+    case 5:
+      uint32 x5;
+  };
+
+
+  @appendable
+  union union_appendable_b switch (uint32) {
+    case 11:
+      int16 x11;
+    case 12:
+      int32 x12;
+    case 3:
+      int64 x3;
+    case 14:
+      uint16 x14;
+    case 15:
+      uint32 x15;
+    case 10:
+      uint64 x10;
+  };
+
+
+  @appendable
+  union union_appendable_c switch (uint32) {
+    case 11:
+      int16 x11;
+    case 12:
+      int32 x12;
+    case 13:
+      int64 x13;
+    case 14:
+      uint16 x14;
+    case 15:
+      uint32 x15;
+    case 10:
+      uint64 x10;
+  };
+
+
+  @appendable
+  union union_appendable_a_default switch (uint32) {
+    case 5:
+      uint32 x5;
+    default:
+      uint32 xd;
+  };
+
+
+  @appendable
+  union union_appendable_b_default switch (uint32) {
+    case 15:
+      uint32 x15;
+    default:
+      uint32 xd;
+  };
+
+
+  @mutable
+  union union_mutable_a switch (uint32) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int64 x3;
+    case 4:
+      uint16 x4;
+    case 5:
+      uint32 x5;
+  };
+
+
+  @mutable
+  union union_mutable_b switch (uint32) {
+    case 11:
+      int16 x11;
+    case 12:
+      int32 x12;
+    case 3:
+      int64 x3;
+    case 14:
+      uint16 x14;
+    case 15:
+      uint32 x15;
+    case 10:
+      uint64 x10;
+  };
+
+
+  @mutable
+  union union_mutable_c switch (uint32) {
+    case 11:
+      int16 x11;
+    case 12:
+      int32 x12;
+    case 13:
+      int64 x13;
+    case 14:
+      uint16 x14;
+    case 15:
+      uint32 x15;
+    case 10:
+      uint64 x10;
+  };
+
+
+  @mutable
+  union union_mutable_a_default switch (uint32) {
+    case 5:
+      uint32 x5;
+    default:
+      uint32 xd;
+  };
+
+
+  @mutable
+  union union_mutable_b_default switch (uint32) {
+    case 15:
+      uint32 x15;
+    default:
+      uint32 xd;
+  };
+
+};

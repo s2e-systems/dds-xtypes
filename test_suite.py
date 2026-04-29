@@ -528,7 +528,7 @@ xtypes_v2_sequence_test_suite = {
 
     'seq(int32)_seq(int32,10)' : {
         'common_args' : ['-X xml/types/sequences.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::int32 -V xml/data/array_num_10.xml -J json/data/array_num_10.json',
+        'apps' : ['pub-exe -P -t test -y Test::int32_unbounded -V xml/data/array_num_10.xml -J json/data/array_num_10.json',
                   'sub-exe -S -t test -y Test::int32x10 -V xml/data/array_num_10.xml -J json/data/array_num_10.json'],
         'expected_codes' : [ReturnCode.OK, ReturnCode.OK],
         'check_function' : tsf.data_is_correct,
@@ -537,7 +537,7 @@ xtypes_v2_sequence_test_suite = {
     },
     'seq(int32)_seq(int32,10)_check_bounds' : {
         'common_args' : ['-X xml/types/sequences.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::int32 -V xml/data/array_num_10.xml -J json/data/array_num_10.json',
+        'apps' : ['pub-exe -P -t test -y Test::int32_unbounded -V xml/data/array_num_10.xml -J json/data/array_num_10.json',
                   'sub-exe -S -t test -y Test::int32x10 -V xml/data/array_num_10.xml -J json/data/array_num_10.json --ignore-seq-bounds f'],
         'expected_codes' : [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
         'check_function' : tsf.data_is_correct,
@@ -672,8 +672,8 @@ xtypes_v2_sequence_test_suite = {
 xtypes_v2_string_test_suite = {
     'string_string' : {
         'common_args' : ['-X xml/types/strings.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::string -V xml/data/strings.xml -J json/data/strings.json',
-                  'sub-exe -S -t test -y Test::string -V xml/data/strings.xml -J json/data/strings.json'],
+        'apps' : ['pub-exe -P -t test -y Test::string_unbounded -V xml/data/strings.xml -J json/data/strings.json',
+                  'sub-exe -S -t test -y Test::string_unbounded -V xml/data/strings.xml -J json/data/strings.json'],
         'expected_codes' : [ReturnCode.OK, ReturnCode.OK],
         'check_function' : tsf.data_is_correct,
         'title' : '',
@@ -681,7 +681,7 @@ xtypes_v2_string_test_suite = {
     },
     'string_string10' : {
         'common_args' : ['-X xml/types/strings.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::string -V xml/data/strings.xml -J json/data/strings.json',
+        'apps' : ['pub-exe -P -t test -y Test::string_unbounded -V xml/data/strings.xml -J json/data/strings.json',
                   'sub-exe -S -t test -y Test::string10 -V xml/data/strings.xml -J json/data/strings.json'],
         'expected_codes' : [ReturnCode.OK, ReturnCode.DATA_NOT_RECEIVED],
         'check_function' : tsf.data_is_correct,
@@ -690,7 +690,7 @@ xtypes_v2_string_test_suite = {
     },
     'string_string10_check' : {
         'common_args' : ['-X xml/types/strings.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::string -V xml/data/strings.xml -J json/data/strings.json',
+        'apps' : ['pub-exe -P -t test -y Test::string_unbounded -V xml/data/strings.xml -J json/data/strings.json',
                   'sub-exe -S -t test -y Test::string10 -V xml/data/strings.xml -J json/data/strings.json --ignore-str-bounds f'],
         'expected_codes' : [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
         'check_function' : tsf.data_is_correct,
@@ -718,8 +718,8 @@ xtypes_v2_string_test_suite = {
 
     'wstring_wstring' : {
         'common_args' : ['-X xml/types/strings.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::wstring -V xml/data/wstrings.xml -J json/data/wstrings.json',
-                  'sub-exe -S -t test -y Test::wstring -V xml/data/wstrings.xml -J json/data/wstrings.json'],
+        'apps' : ['pub-exe -P -t test -y Test::wstring_unbounded -V xml/data/wstrings.xml -J json/data/wstrings.json',
+                  'sub-exe -S -t test -y Test::wstring_unbounded -V xml/data/wstrings.xml -J json/data/wstrings.json'],
         'expected_codes' : [ReturnCode.OK, ReturnCode.OK],
         'check_function' : tsf.data_is_correct,
         'title' : '',
@@ -727,7 +727,7 @@ xtypes_v2_string_test_suite = {
     },
     'wstring_wstring10' : {
         'common_args' : ['-X xml/types/strings.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::wstring -V xml/data/wstrings.xml -J json/data/wstrings.json',
+        'apps' : ['pub-exe -P -t test -y Test::wstring_unbounded -V xml/data/wstrings.xml -J json/data/wstrings.json',
                   'sub-exe -S -t test -y Test::wstring10 -V xml/data/wstrings.xml -J json/data/wstrings.json'],
         'expected_codes' : [ReturnCode.OK, ReturnCode.DATA_NOT_RECEIVED],
         'check_function' : tsf.data_is_correct,
@@ -736,7 +736,7 @@ xtypes_v2_string_test_suite = {
     },
     'wstring_wstring10_check' : {
         'common_args' : ['-X xml/types/strings.xml'],
-        'apps' : ['pub-exe -P -t test -y Test::wstring -V xml/data/wstrings.xml -J json/data/wstrings.json',
+        'apps' : ['pub-exe -P -t test -y Test::wstring_unbounded -V xml/data/wstrings.xml -J json/data/wstrings.json',
                   'sub-exe -S -t test -y Test::wstring10 -V xml/data/wstrings.xml -J json/data/wstrings.json --ignore-str-bounds f'],
         'expected_codes' : [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
         'check_function' : tsf.data_is_correct,

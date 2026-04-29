@@ -2,7 +2,7 @@
     <types>
         <module name="Test">
 
-        <struct name="string"   extensibility="final">
+        <struct name="string_unbounded"   extensibility="final">
             <member name="x1"   type="string"   />
         </struct>
 
@@ -15,7 +15,7 @@
         </struct>
 
 
-        <struct name="wstring"   extensibility="final">
+        <struct name="wstring_unbounded"   extensibility="final">
             <member name="x1"   type="wstring"   />
         </struct>
 

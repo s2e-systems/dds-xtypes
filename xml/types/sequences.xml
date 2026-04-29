@@ -1,7 +1,7 @@
 <dds>
     <types>
       <module name="Test">
-        <struct name="int32"   extensibility="final">
+        <struct name="int32_unbounded"   extensibility="final">
             <member name="x1"   type="int32" sequenceMaxLength="-1"  /> <!-- unlimited (0 or -1) -->
         </struct>
 

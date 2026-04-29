@@ -1,0 +1,8 @@
+module Test {
+
+  @appendable
+  struct struct_x1 {
+    uint32 x1;
+  };
+
+};

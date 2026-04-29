@@ -1,0 +1,176 @@
+module Test {
+
+  @final
+  struct struct_primitives_final {
+    uint8 x1;
+    uint16 x2;
+    uint32 x3;
+    uint64 x4;
+    int8 x5;
+    int16 x6;
+    int32 x7;
+    int64 x8;
+    boolean x9;
+    float x10;
+    double x11;
+    long double x12;
+    octet x13;
+    char x14;
+  };
+
+
+  @appendable
+  struct struct_primitives_appendable {
+    uint8 x1;
+    uint16 x2;
+    uint32 x3;
+    uint64 x4;
+    int8 x5;
+    int16 x6;
+    int32 x7;
+    int64 x8;
+    boolean x9;
+    float x10;
+    double x11;
+    long double x12;
+    octet x13;
+    char x14;
+  };
+
+
+  @mutable
+  struct struct_primitives_mutable {
+    uint8 x1;
+    uint16 x2;
+    uint32 x3;
+    uint64 x4;
+    int8 x5;
+    int16 x6;
+    int32 x7;
+    int64 x8;
+    boolean x9;
+    float x10;
+    double x11;
+    long double x12;
+    octet x13;
+    char x14;
+  };
+
+
+  @appendable
+  union union_primitives switch (uint8) {
+    case 0x01:
+      uint8 x1;
+    case 0x02:
+      uint16 x2;
+    case 0x03:
+      uint32 x3;
+    case 0x04:
+      uint64 x4;
+    case 0x05:
+      int8 x5;
+    case 0x06:
+      int16 x6;
+    case 0x07:
+      int32 x7;
+    case 0x08:
+      int64 x8;
+    case 0x09:
+      boolean x9;
+    case 0x0a:
+      float x10;
+    case 0x0b:
+      double x11;
+    case 0x0c:
+      double x12;
+    case 0x0d:
+      octet x13;
+    case 0x0e:
+      char x14;
+  };
+
+
+  @final
+  struct struct_primitive_uint8 {
+    uint8 x1;
+  };
+
+
+  @final
+  struct struct_primitive_uint16 {
+    uint16 x1;
+  };
+
+
+  @final
+  struct struct_primitive_uint32 {
+    uint32 x1;
+  };
+
+
+  @final
+  struct struct_primitive_uint64 {
+    uint64 x1;
+  };
+
+
+  @final
+  struct struct_primitive_int8 {
+    int8 x1;
+  };
+
+
+  @final
+  struct struct_primitive_int16 {
+    int16 x1;
+  };
+
+
+  @final
+  struct struct_primitive_int32 {
+    int32 x1;
+  };
+
+
+  @final
+  struct struct_primitive_int64 {
+    int64 x1;
+  };
+
+
+  @final
+  struct struct_primitive_boolean {
+    boolean x1;
+  };
+
+
+  @final
+  struct struct_primitive_float32 {
+    float x1;
+  };
+
+
+  @final
+  struct struct_primitive_float64 {
+    double x1;
+  };
+
+
+  @final
+  struct struct_primitive_float128 {
+    long double x1;
+  };
+
+
+  @final
+  struct struct_primitive_byte {
+    octet x1;
+  };
+
+
+  @final
+  struct struct_primitive_char8 {
+    char x1;
+  };
+
+};

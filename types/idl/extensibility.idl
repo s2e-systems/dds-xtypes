@@ -1,0 +1,86 @@
+module Test {
+
+  @final
+  struct struct_f1 {
+    int32 x1;
+  };
+
+
+  @final
+  struct struct_f2 {
+    int32 x1;
+    int32 x2;
+  };
+
+
+  @appendable
+  struct struct_a1 {
+    int32 x1;
+  };
+
+
+  @appendable
+  struct struct_a2 {
+    int32 x1;
+    int32 x2;
+  };
+
+
+  @appendable
+  struct struct_a3 {
+    int32 x1;
+    int32 x3;
+    int32 x2;
+  };
+
+
+  @mutable
+  struct struct_m1 {
+    @id(1)
+    int32 x1;
+  };
+
+
+  @mutable
+  struct struct_m2 {
+    @id(1)
+    int32 x1;
+    @id(2)
+    int32 x2;
+  };
+
+
+  @mutable
+  struct struct_m3 {
+    @id(1)
+    int32 x1;
+    @id(3)
+    int32 x3;
+    @id(2)
+    int32 x2;
+  };
+
+
+  @mutable
+  struct struct_m4 {
+    int32 x1;
+    int32 x3;
+    int32 x2;
+  };
+
+
+  @autoid
+  @final
+  struct struct_hashid_1 {
+    int32 x1;
+  };
+
+
+  @autoid
+  @final
+  struct struct_hashid_2 {
+    @hashid("x1")
+    int32 x2;
+  };
+
+};

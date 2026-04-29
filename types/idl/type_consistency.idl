@@ -1,0 +1,38 @@
+module Test {
+
+  @appendable
+  struct struct_x1 {
+    int32 x1;
+  };
+
+
+  @appendable
+  struct struct_x2 {
+    int32 x2;
+  };
+
+
+  @final
+  struct seq_int32x10 {
+    sequence<int32,10> x1;
+  };
+
+
+  @final
+  struct seq_int32x20 {
+    sequence<int32,20> x1;
+  };
+
+
+  @final
+  struct string10 {
+    string<10> x1;
+  };
+
+
+  @final
+  struct string20 {
+    string<20> x1;
+  };
+
+};

@@ -1,0 +1,38 @@
+module Test {
+
+  @final
+  struct string_unbounded {
+    string x1;
+  };
+
+
+  @final
+  struct string10 {
+    string<10> x1;
+  };
+
+
+  @final
+  struct string20 {
+    string<20> x1;
+  };
+
+
+  @final
+  struct wstring_unbounded {
+    wstring x1;
+  };
+
+
+  @final
+  struct wstring10 {
+    wstring<10> x1;
+  };
+
+
+  @final
+  struct wstring20 {
+    wstring<20> x1;
+  };
+
+};

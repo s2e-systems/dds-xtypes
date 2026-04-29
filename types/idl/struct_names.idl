@@ -1,0 +1,200 @@
+module Test {
+
+  @mutable
+  struct struct_1 {
+    @id(1)
+    int32 x1;
+    @id(5)
+    int32 x5;
+  };
+
+
+  @mutable
+  struct struct_2 {
+    @id(2)
+    int32 x1;
+    @id(5)
+    int32 x5;
+  };
+
+
+  @final
+  struct struct_3 {
+    @id(1)
+    int32 x1;
+  };
+
+
+  @final
+  struct struct_4 {
+    @id(1)
+    int32 x2;
+  };
+
+
+  @mutable
+  struct struct_5 {
+    @id(1)
+    int32 x1;
+  };
+
+
+  @mutable
+  struct struct_6 {
+    @id(2)
+    int32 x2;
+  };
+
+
+  @final
+  struct struct_primitive_uint8 {
+    octet x1;
+  };
+
+
+  @final
+  struct struct_primitive_uint16 {
+    uint16 x1;
+  };
+
+
+  @appendable
+  struct struct_key_1 {
+    int32 x1;
+    @key
+    int32 x2;
+  };
+
+
+  @appendable
+  struct struct_key_2 {
+    int32 x1;
+  };
+
+
+  @appendable
+  struct struct_key_string10 {
+    @key
+    string<10> x1;
+  };
+
+
+  @appendable
+  struct struct_key_string20 {
+    @key
+    string<20> x1;
+  };
+
+  @appendable
+  enum E1 {
+    @value(0)
+    VAL0,
+    @value(1)
+    VAL1,
+    @value(2)
+    VAL2
+  };
+  @appendable
+  enum E2 {
+    @value(0)
+    VAL0,
+    @value(1)
+    VAL1,
+    @value(2)
+    VAL2,
+    @value(3)
+    VAL3
+  };
+
+  @mutable
+  struct struct_key_enum_1 {
+    @key
+    Test::E1 x1;
+  };
+
+
+  @mutable
+  struct struct_key_enum_2 {
+    @key
+    Test::E2 x1;
+  };
+
+
+  @appendable
+  struct struct_key_seq10 {
+    @key
+    sequence<int32,10> x1;
+  };
+
+
+  @appendable
+  struct struct_key_seq20 {
+    @key
+    sequence<int32,20> x1;
+  };
+
+
+  @appendable
+  struct key_1 {
+    @key
+    string<10> k1;
+    string<20> x2;
+  };
+
+
+  @appendable
+  struct key_2 {
+    @key
+    string<20> k1;
+    string<10> x2;
+  };
+
+
+  @appendable
+  struct struct_key_struct_1 {
+    @key
+    Test::key_1 x1;
+  };
+
+
+  @appendable
+  struct struct_key_struct_2 {
+    @key
+    Test::key_2 x1;
+  };
+
+
+  @mutable
+  union u_1 switch (uint8) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+  };
+
+
+  @mutable
+  union u_2 switch (uint8) {
+    case 1:
+      int16 x1;
+    case 2:
+      int32 x2;
+    case 3:
+      int64 x3;
+  };
+
+
+  @mutable
+  struct struct_key_union_1 {
+    @key
+    Test::u_1 x1;
+  };
+
+
+  @mutable
+  struct struct_key_union_2 {
+    @key
+    Test::u_2 x1;
+  };
+
+};

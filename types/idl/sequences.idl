@@ -1,0 +1,148 @@
+module Test {
+
+  @final
+  struct int32_unbounded {
+    sequence<int32> x1;
+  };
+
+
+  @final
+  struct int32x10 {
+    sequence<int32,10> x1;
+  };
+
+
+  @final
+  struct int32x20 {
+    sequence<int32,20> x1;
+  };
+
+
+  @final
+  struct uint32x10 {
+    sequence<uint32,10> x1;
+  };
+
+
+  @final
+  struct uint32x20 {
+    sequence<uint32,20> x1;
+  };
+
+
+  @final
+  struct string10x10 {
+    sequence<string<10>,10 > x1;
+  };
+
+
+  @final
+  struct string20x10 {
+    sequence<string<20>,10 > x1;
+  };
+
+  @appendable
+  enum E1 {
+    @value(0)
+    VAL0,
+    @value(1)
+    VAL1,
+    @value(2)
+    VAL2
+  };
+  @appendable
+  enum E2 {
+    @value(0)
+    VAL0,
+    @value(1)
+    VAL1,
+    @value(2)
+    VAL2,
+    @value(3)
+    VAL3
+  };
+
+  @final
+  struct enum1 {
+    sequence<Test::E1,10> x1;
+  };
+
+
+  @final
+  struct enum2 {
+    sequence<Test::E2,10> x1;
+  };
+
+
+  @final
+  struct F_S__seq20_uint32 {
+    sequence<uint32,20> x1;
+  };
+
+
+  @final
+  struct F_S__seq20_uint32_alt {
+    sequence<uint32,20> altx1;
+  };
+
+
+  @appendable
+  struct A_S__seq20_uint32 {
+    sequence<uint32,20> x1;
+  };
+
+
+  @appendable
+  struct A_S__seq20_uint32_alt {
+    sequence<uint32,20> altx1;
+  };
+
+
+  @mutable
+  struct M_S__seq20_uint32 {
+    sequence<uint32,20> x1;
+  };
+
+
+  @mutable
+  struct M_S__seq20_uint32_alt {
+    sequence<uint32,20> altx1;
+  };
+
+
+  @final
+  struct F_S__seq10_F_S__seq20_uint32 {
+    sequence<Test::F_S__seq20_uint32,10> x1;
+  };
+
+
+  @final
+  struct F_S__seq10_F_S__seq20_uint32_alt {
+    sequence<Test::F_S__seq20_uint32_alt,10> altx1;
+  };
+
+
+  @final
+  struct F_S__seq10_A_S__seq20_uint32 {
+    sequence<Test::A_S__seq20_uint32,10> x1;
+  };
+
+
+  @final
+  struct F_S__seq10_A_S__seq20_uint32_alt {
+    sequence<Test::A_S__seq20_uint32_alt,10> altx1;
+  };
+
+
+  @final
+  struct F_S__seq10_M_S__seq20_uint32 {
+    sequence<Test::M_S__seq20_uint32,10> x1;
+  };
+
+
+  @final
+  struct F_S__seq10_M_S__seq20_uint32_alt {
+    sequence<Test::M_S__seq20_uint32_alt,10> altx1;
+  };
+
+};
