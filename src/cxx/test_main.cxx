@@ -1044,7 +1044,7 @@ public:
   //-------------------------------------------------------------
   ~TestApplication()
   {
-    if (dt)  CLEANUP_TYPE( dp, dt );
+    if (dt)  cleanup_type( dp, dt );
     if (dp)  dp->delete_contained_entities( );
     if (dpf) dpf->delete_participant( dp );
   }
@@ -1081,17 +1081,17 @@ public:
     }
     logger.log_message("Participant created", Verbosity::DEBUG);
 
-    dt = CREATE_TYPE( dp, options->type_folder, options->type_file, options->type_name );
+    dt = create_type( dp, options->type_folder, options->type_file, options->type_name );
     if (dt == NULL) {
         logger.log_message("failed to create type", Verbosity::ERROR);
         return false;
     }
 
     if (options->print_typeid) {
-        PRINT_TYPEID(dt, options->type_object_version);
+        print_typeid(dt, options->type_object_version);
     }
 
-    if (REGISTER_TYPE(dp, dt, options->type_name) != DDS_RETCODE_OK) {
+    if (register_type(dp, dt, options->type_name) != DDS_RETCODE_OK) {
         logger.log_message("failed to register type", Verbosity::ERROR);
         return false;
     }
@@ -1118,7 +1118,7 @@ public:
     } else if ( sub != NULL ) {
       return run_subscriber(options);
     }
-    CLEANUP_TYPE( dp, dt );
+    cleanup_type( dp, dt );
     return false;
   }
 
@@ -1336,8 +1336,8 @@ public:
 
             if (sample_info->valid_data)  {
               printf( "sample_received()\n" );
-              PRINT_DATA(sample);
-              if (CHECK_DATA(sample, options->data_folder, options->data_file)) {
+              print_data(sample);
+              if (check_data(sample, options->data_folder, options->data_file)) {
                 printf("Received sample is the same as loaded\n");
               } else {
                 printf("Received sample is not the same as loaded\n");
@@ -1363,13 +1363,13 @@ public:
   //-------------------------------------------------------------
   bool run_publisher(TestOptions *options)
   {
-    DDS::DynamicData * dd = CREATE_DATA(dt);
+    DDS::DynamicData * dd = create_data(dt);
     if (dd == NULL) {
         logger.log_message("Error creating DynamicData", Verbosity::ERROR);
         return false;
     }
 
-    if (INIT_DATA(dd, options->data_folder, options->data_file)
+    if (init_data(dd, options->data_folder, options->data_file)
             != DDS_RETCODE_OK) {
         logger.log_message("Error initializing data", Verbosity::ERROR);
         return false;
@@ -1385,11 +1385,11 @@ public:
       if (options->print_writer_samples)
         {
           printf(" Wrote:\n" );
-          PRINT_DATA( dd );
+          print_data( dd );
         }
       usleep(1000000);
     }
-    CLEANUP_DATA( dd );
+    cleanup_data( dd );
     return true;
   }
 

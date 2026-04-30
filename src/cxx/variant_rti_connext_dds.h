@@ -20,18 +20,21 @@ TypeConsistency_get_default(void) {
 }
 
 
-void StringSeq_push(DDS::StringSeq  &string_seq, const char *elem)
+void
+StringSeq_push(DDS::StringSeq  &string_seq, const char *elem)
 {
     string_seq.ensure_length(string_seq.length()+1, string_seq.length()+1);
     string_seq[string_seq.length()-1] = DDS_String_dup(elem);
 }
 
-void config_dpf() {
+void
+config_dpf() {
     NDDS_Config_set_xtypes_compliance_mask(
             NDDS_CONFIG_XTYPES_COMPLIANCE_MASK_VENDOR);
 }
 
-DDS::DynamicDataTypeSupport * get_type_support(DDS::DynamicType* dt) {
+DDS::DynamicDataTypeSupport *
+get_type_support(DDS::DynamicType* dt) {
     if (g_type_support == NULL) {
         g_type_support = new DDS::DynamicDataTypeSupport(
                 dt,
@@ -40,12 +43,14 @@ DDS::DynamicDataTypeSupport * get_type_support(DDS::DynamicType* dt) {
     return g_type_support;
 }
 
-const char *get_qos_policy_name(DDS_QosPolicyId_t policy_id)
+const char *
+get_qos_policy_name(DDS_QosPolicyId_t policy_id)
 {
     return DDS_QosPolicyId_to_string(policy_id); // not standard...
 }
 
-void disable_type_information(DDS::DomainParticipantQos &dp_qos)
+void
+disable_type_information(DDS::DomainParticipantQos &dp_qos)
 {
     dp_qos.resource_limits.type_code_max_serialized_length = 0;
     dp_qos.resource_limits.type_object_max_serialized_length = 0;
@@ -53,7 +58,8 @@ void disable_type_information(DDS::DomainParticipantQos &dp_qos)
                 DDS_DISCOVERYCONFIG_BUILTIN_CHANNEL_MASK_NONE;
 }
 
-void set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
+void
+set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
 {
     if (version == 1) {
         dp_qos.discovery_config.enabled_builtin_channels =
@@ -69,7 +75,8 @@ void set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
     }
 }
 
-void print_type_objectV1(DDS::DynamicType *dt) {
+void
+print_type_objectV1(DDS::DynamicType *dt) {
     DDS_TypeObject *type_object = DDS_TypeObject_create_from_typecode(dt);
     if (type_object == NULL) {
         std::cerr << "Failed to create Type Object from TypeCode" << std::endl;
@@ -81,7 +88,8 @@ void print_type_objectV1(DDS::DynamicType *dt) {
     DDS_TypeObject_delete(type_object);
 }
 
-void print_type_objectV2(DDS::DynamicType *dt) {
+void
+print_type_objectV2(DDS::DynamicType *dt) {
     DDS_TypeObjectV2EquivalenceHash completeHash;
     DDS_TypeObjectV2EquivalenceHash minimalHash;
     DDS_TypeObjectV2 *type_object_v2 =
@@ -109,7 +117,7 @@ void print_type_objectV2(DDS::DynamicType *dt) {
 }
 
 void
-PRINT_TYPEID(DDS::DynamicType *dt, int version)
+print_typeid(DDS::DynamicType *dt, int version)
 {
     if (version == 1) {
         print_type_objectV1(dt);
@@ -122,7 +130,7 @@ PRINT_TYPEID(DDS::DynamicType *dt, int version)
 }
 
 void
-PRINT_DATA_JSON(DDS::DynamicData *dd)
+print_data_json(DDS::DynamicData *dd)
 {
     unsigned int str_size = 0;
 
@@ -146,7 +154,8 @@ PRINT_DATA_JSON(DDS::DynamicData *dd)
     delete[] json_str;
 }
 
-DDS::DynamicType * CREATE_TYPE(
+DDS::DynamicType *
+create_type(
     DDS::DomainParticipant * dp,
     const char * type_folder,
     const char * type_file,
@@ -181,7 +190,7 @@ DDS::DynamicType * CREATE_TYPE(
 }
 
 DDS::ReturnCode_t
-REGISTER_TYPE(
+register_type(
         DDS::DomainParticipant * dp,
         DDS::DynamicType * dt,
         const char * type_name )
@@ -199,7 +208,8 @@ REGISTER_TYPE(
     return retval;
 }
 
-void CLEANUP_TYPE(DDS::DomainParticipant *dp, DDS::DynamicType *dt )
+void
+cleanup_type(DDS::DomainParticipant *dp, DDS::DynamicType *dt )
 {
     if (dp != NULL && dt != NULL) {
         DDS::DynamicTypeFactory* dt_factory =
@@ -216,7 +226,8 @@ void CLEANUP_TYPE(DDS::DomainParticipant *dp, DDS::DynamicType *dt )
     }
 }
 
-DDS::DynamicData * CREATE_DATA(DDS::DynamicType *dt)
+DDS::DynamicData *
+create_data(DDS::DynamicType *dt)
 {
     DDS::DynamicData * retval = NULL;
 
@@ -227,7 +238,8 @@ DDS::DynamicData * CREATE_DATA(DDS::DynamicType *dt)
     return retval;
 }
 
-DDS::ReturnCode_t INIT_DATA(
+DDS::ReturnCode_t
+init_data(
         DDS::DynamicData *dd,
         const char *data_folder,
         const char *data_file)
@@ -259,12 +271,12 @@ DDS::ReturnCode_t INIT_DATA(
 }
 
 void
-PRINT_DATA(DDS::DynamicData *dd)
+print_data(DDS::DynamicData *dd)
 {
-    PRINT_DATA_JSON(dd);
+    print_data_json(dd);
 }
 
-void CLEANUP_DATA(DDS::DynamicData *dd)
+void cleanup_data(DDS::DynamicData *dd)
 {
     DDS::DynamicDataTypeSupport* type_support = get_type_support(
             (DDS::DynamicType *)dd->get_type());
@@ -273,7 +285,7 @@ void CLEANUP_DATA(DDS::DynamicData *dd)
 }
 
 bool
-CHECK_DATA(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
+check_data(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
 {
     bool retval = false;
 
@@ -281,13 +293,13 @@ CHECK_DATA(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
         return retval;
     }
 
-    DDS::DynamicData *data_check = CREATE_DATA(
+    DDS::DynamicData *data_check = create_data(
             (DDS::DynamicType *) dd->get_type());
     if (data_check == NULL) {
         retval = false;
         goto done;
     }
-    if (INIT_DATA(data_check, data_folder, data_file) != DDS_RETCODE_OK) {
+    if (init_data(data_check, data_folder, data_file) != DDS_RETCODE_OK) {
         retval = false;
         goto done;
     }
@@ -296,7 +308,7 @@ CHECK_DATA(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
 
 done:
     if (data_check != NULL) {
-        CLEANUP_DATA(data_check);
+        cleanup_data(data_check);
     }
     return retval;
 }
