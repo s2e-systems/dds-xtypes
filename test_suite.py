@@ -12,8 +12,8 @@ import test_suite_functions as tsf
 xtypes_v2_extensibility_test_suite = {
     'ext_final_struct_1' : {
         'common_args' : ['--type-folder types --type-file extensibility'],
-        'apps' : ['pub-exe -P -t test -y Test::struct_f1 --data-folder data --data-file struct_1',
-                  'sub-exe -S -t test -y Test::struct_f1 --data-folder data --data-file struct_1 --ignore-member-names f'],
+        'apps' : ['pub-exe -P -t test -y Test::struct_f1 --data-folder data --data-file struct_num_x1',
+                  'sub-exe -S -t test -y Test::struct_f1 --data-folder data --data-file struct_num_x1 --ignore-member-names f'],
         'expected_codes' : [ReturnCode.OK, ReturnCode.OK],
         'check_function' : tsf.data_is_correct,
         'title' : '',
@@ -21,8 +21,8 @@ xtypes_v2_extensibility_test_suite = {
     },
     'ext_final_struct_2' : {
         'common_args' : ['--type-folder types --type-file extensibility'],
-        'apps' : ['pub-exe -P -t test -y Test::struct_f1 --data-folder data --data-file struct_1',
-                  'sub-exe -S -t test -y Test::struct_f2 --data-folder data --data-file struct_1 --ignore-member-names f'],
+        'apps' : ['pub-exe -P -t test -y Test::struct_f1 --data-folder data --data-file struct_num_x1',
+                  'sub-exe -S -t test -y Test::struct_f2 --data-folder data --data-file struct_num_x1 --ignore-member-names f'],
         'expected_codes' : [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
         'check_function' : tsf.data_is_correct,
         'title' : '',
