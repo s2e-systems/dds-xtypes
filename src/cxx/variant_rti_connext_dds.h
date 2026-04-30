@@ -148,13 +148,19 @@ PRINT_DATA_JSON(DDS::DynamicData *dd)
 
 DDS::DynamicType * CREATE_TYPE(
     DDS::DomainParticipant * dp,
-    const char * types_uri,
+    const char * type_folder,
+    const char * type_file,
     const char * type_name )
 {
     const DDS::DynamicType *dt = NULL;
     DDS::DomainParticipantFactoryQos factory_qos;
+    if (type_folder == NULL && type_file == NULL) {
+        return NULL;
+    }
+    // resolve path: type_folder/xml/type_file.xml
+    std::string file_path = std::string(type_folder) + "/xml/" + std::string(type_file) + ".xml";
 
-    if (dp && types_uri && type_name) {
+    if (dp != NULL && type_name != NULL) {
         if (TheParticipantFactory->get_qos(factory_qos) != DDS_RETCODE_OK) {
             return NULL;
         }
@@ -162,7 +168,7 @@ DDS::DynamicType * CREATE_TYPE(
             return NULL;
         }
 
-        factory_qos.profile.url_profile[0] = DDS_String_dup(types_uri);
+        factory_qos.profile.url_profile[0] = DDS_String_dup(file_path.c_str());
         if (factory_qos.profile.url_profile[0] == NULL) {
             return NULL;
         }
@@ -223,17 +229,22 @@ DDS::DynamicData * CREATE_DATA(DDS::DynamicType *dt)
 
 DDS::ReturnCode_t INIT_DATA(
         DDS::DynamicData *dd,
-        const char *xml_data_uri,
-        const char *json_data_uri)
+        const char *data_folder,
+        const char *data_file)
 {
     DDS::ReturnCode_t retval = DDS::RETCODE_ERROR;
 
-    (void) xml_data_uri;
+    if (data_folder == NULL && data_file == NULL) {
+        return retval;
+    }
+    // the path is composed by the data_folder + "/json/" + data_file
+    // because the JSON files are expected to be in a "json" subdirectory of the provided folder
+    std::string file_path = std::string(data_folder) + "/json/" + std::string(data_file) + ".json";
 
-    if (dd != NULL && json_data_uri != NULL) {
-        std::ifstream file(json_data_uri);
+    if (dd != NULL) {
+        std::ifstream file(file_path);
         if (!file) {
-            std::cerr << "Failed to open the file: " << std::string(json_data_uri)
+            std::cerr << "Failed to open the file: " << std::string(data_file)
                     << std::endl;
             return retval;
         }
@@ -242,9 +253,7 @@ DDS::ReturnCode_t INIT_DATA(
         std::ostringstream buffer;
         buffer << file.rdbuf();
 
-        if (dd != NULL && json_data_uri != NULL) {
-            retval = dd->from_string(buffer.str().c_str(), DDS_JSON_PRINT_FORMAT);
-        }
+        retval = dd->from_string(buffer.str().c_str(), DDS_JSON_PRINT_FORMAT);
     }
     return retval;
 }
@@ -264,13 +273,11 @@ void CLEANUP_DATA(DDS::DynamicData *dd)
 }
 
 bool
-CHECK_DATA(DDS::DynamicData *dd, const char *xml_data_uri, const char *json_data_uri)
+CHECK_DATA(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
 {
     bool retval = false;
 
-    (void) xml_data_uri;
-
-    if (dd == NULL && json_data_uri == NULL) {
+    if (dd == NULL && data_file == NULL) {
         return retval;
     }
 
@@ -280,7 +287,7 @@ CHECK_DATA(DDS::DynamicData *dd, const char *xml_data_uri, const char *json_data
         retval = false;
         goto done;
     }
-    if (INIT_DATA(data_check, xml_data_uri, json_data_uri) != DDS_RETCODE_OK) {
+    if (INIT_DATA(data_check, data_folder, data_file) != DDS_RETCODE_OK) {
         retval = false;
         goto done;
     }

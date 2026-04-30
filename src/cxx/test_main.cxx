@@ -222,6 +222,10 @@ Logger logger(ERROR);
 #define OPT_DISABLE_TYPE_INFO        0x1006
 #define OPT_TYPE_OBJECT_VERSION      0x1007
 #define OPT_PRINT_TYPEID             0x1008
+#define OPT_TYPE_FOLDER              0x1009
+#define OPT_TYPE_FILE                0x100A
+#define OPT_DATA_FOLDER              0x100B
+#define OPT_DATA_FILE                0x100C
 
 static struct option long_opts[] =
   {
@@ -235,6 +239,10 @@ static struct option long_opts[] =
     { "disable-type-info",     no_argument,       NULL, OPT_DISABLE_TYPE_INFO      },
     { "type-object-version",   required_argument, NULL, OPT_TYPE_OBJECT_VERSION    },
     { "print-typeid",          no_argument,       NULL, OPT_PRINT_TYPEID           },
+    { "type-folder",           required_argument, NULL, OPT_TYPE_FOLDER            },
+    { "type-file",             required_argument, NULL, OPT_TYPE_FILE              },
+    { "data-folder",           required_argument, NULL, OPT_DATA_FOLDER            },
+    { "data-file",             required_argument, NULL, OPT_DATA_FILE              },
     { NULL, 0, NULL, 0 }
   };
 
@@ -253,10 +261,11 @@ public:
 
   char               *topic_name;
   char               *type_name;
-  char               *types_uri;   /* xml file of defined types */
+  char               *type_folder; /* folder containing type definitions */
+  char               *type_file;   /* local file with type definitions */
 
-  char               *xml_data_uri;    /* xml file of data sample */
-  char               *json_data_uri;    /* json file of data sample */
+  char               *data_folder; /* folder containing data samples */
+  char               *data_file;   /* local file with data sample */
 
   char               *partition;
 
@@ -301,9 +310,10 @@ public:
     topic_name         = NULL;
     type_name          = NULL;
     partition          = NULL;
-    types_uri          = NULL;
-    xml_data_uri           = NULL;
-    json_data_uri           = NULL;
+    type_folder        = NULL;
+    type_file          = NULL;
+    data_folder        = NULL;
+    data_file          = NULL;
 
     publish            = false;
     subscribe          = false;
@@ -323,9 +333,10 @@ public:
   {
     if (topic_name)       free(topic_name);
     if (type_name)        free(type_name);
-    if (types_uri)        free(types_uri);
-    if (xml_data_uri)     free(xml_data_uri);
-    if (json_data_uri)    free(json_data_uri);
+    if (type_folder)      free(type_folder);
+    if (type_file)        free(type_file);
+    if (data_folder)      free(data_folder);
+    if (data_file)        free(data_file);
     if (partition)        free(partition);
   }
 
@@ -348,11 +359,11 @@ public:
     printf("   -P              : publish samples\n");
     printf("   -S              : subscribe samples\n");
     printf("   -x [1|2]        : set data representation [1: XCDR, 2: XCDR2]\n");
-    printf("   -X <types_uri>  : xml file with type definitions\n");
-    printf("   -V <xml_data_uri> : xml file with data sample values. XML and JSON may be\n");
-    printf("                       provided, the app is in charge of using what it needs\n");
-    printf("   -J <json_data_uri> : json file with data sample values. XML and JSON may be\n");
-    printf("                        provided, the app is in charge of using what it needs\n");
+    printf("   --type-uri <uri>  : URI of type definitions (eg: types)\n");
+    printf("   --type-file <path>: local file with type definitions (eg. sequences)\n");
+    printf("   --data-uri <uri>  : URI of data sample values (eg: data)\n");
+    printf("   --data-file <path>: local file with data sample values (format detected\n");
+    printf("                       from extension: .xml or .json)\n");
     printf("   -w              : print Publisher's samples\n");
     printf("   --force-type-validation [t|f|d]: enable, disable or default value for\n");
     printf("                                 type_consistency.force_type_validation\n");
@@ -395,13 +406,13 @@ public:
       return false;
     }
 #if 0   /* allow publishing an empty, unpopulated sample */
-    if ( xml_data_uri == NULL && json_data_uri == NULL ) {
-      logger.log_message("please provide the data either in XML [-V] or JSON [-J]", Verbosity::ERROR);
+    if ( data_folder == NULL && data_file == NULL ) {
+      logger.log_message("please provide the data via --data-folder or --data-file", Verbosity::ERROR);
       return false;
     }
 #endif
-    if ( types_uri == NULL ) {
-      logger.log_message("please provide the types in XML [-X]", Verbosity::ERROR);
+    if ( type_folder == NULL && type_file == NULL ) {
+      logger.log_message("please provide the types via --type-folder or --type-file", Verbosity::ERROR);
       return false;
     }
     if ( type_consistency.kind != ALLOW_TYPE_COERCION
@@ -424,7 +435,7 @@ public:
     bool parse_ok = true;
     // double d;
     while ((opt = getopt_long(argc, argv,
-                              "hbrd:D:f:i:k:p:s:x:X:t:v:V:J:wy:PS",
+                              "hbrd:D:f:i:k:p:s:x:t:v:wy:PS",
                               long_opts, NULL)) != -1)
       {
         switch (opt)
@@ -637,24 +648,29 @@ public:
                 }
               break;
             }
-          case 'X':
-            {
-              types_uri = strdup(optarg);
-              break;
-            }
           case 'y':
             {
               type_name = strdup(optarg);
               break;
             }
-          case 'V':
+          case OPT_TYPE_FOLDER:
             {
-              xml_data_uri = strdup(optarg);
+              type_folder = strdup(optarg);
               break;
             }
-          case 'J':
+          case OPT_TYPE_FILE:
             {
-              json_data_uri = strdup(optarg);
+              type_file = strdup(optarg);
+              break;
+            }
+          case OPT_DATA_FOLDER:
+            {
+              data_folder = strdup(optarg);
+              break;
+            }
+          case OPT_DATA_FILE:
+            {
+              data_file = strdup(optarg);
               break;
             }
           case OPT_FORCE_TYPE_VALIDATION:
@@ -887,16 +903,20 @@ public:
         logger.log_message("    Type  = " + std::string(type_name),
                            Verbosity::DEBUG);
       }
-      if (types_uri != NULL){
-        logger.log_message("    Types URI = " + std::string(types_uri),
+      if (type_folder != NULL){
+        logger.log_message("    Type Folder = " + std::string(type_folder),
                            Verbosity::DEBUG);
       }
-      if (xml_data_uri != NULL){
-        logger.log_message("    XML Data URI = " + std::string(xml_data_uri),
+      if (type_file != NULL){
+        logger.log_message("    Type File = " + std::string(type_file),
                            Verbosity::DEBUG);
       }
-      if (json_data_uri != NULL){
-        logger.log_message("    JSON Data URI = " + std::string(json_data_uri),
+      if (data_folder != NULL){
+        logger.log_message("    Data Folder = " + std::string(data_folder),
+                           Verbosity::DEBUG);
+      }
+      if (data_file != NULL){
+        logger.log_message("    Data File = " + std::string(data_file),
                            Verbosity::DEBUG);
       }
       if (partition != NULL) {
@@ -1061,7 +1081,7 @@ public:
     }
     logger.log_message("Participant created", Verbosity::DEBUG);
 
-    dt = CREATE_TYPE( dp, options->types_uri, options->type_name );
+    dt = CREATE_TYPE( dp, options->type_folder, options->type_file, options->type_name );
     if (dt == NULL) {
         logger.log_message("failed to create type", Verbosity::ERROR);
         return false;
@@ -1317,7 +1337,7 @@ public:
             if (sample_info->valid_data)  {
               printf( "sample_received()\n" );
               PRINT_DATA(sample);
-              if (CHECK_DATA(sample, options->xml_data_uri, options->json_data_uri)) {
+              if (CHECK_DATA(sample, options->data_folder, options->data_file)) {
                 printf("Received sample is the same as loaded\n");
               } else {
                 printf("Received sample is not the same as loaded\n");
@@ -1349,7 +1369,7 @@ public:
         return false;
     }
 
-    if (INIT_DATA(dd, options->xml_data_uri, options->json_data_uri)
+    if (INIT_DATA(dd, options->data_folder, options->data_file)
             != DDS_RETCODE_OK) {
         logger.log_message("Error initializing data", Verbosity::ERROR);
         return false;
