@@ -359,11 +359,10 @@ public:
     printf("   -P              : publish samples\n");
     printf("   -S              : subscribe samples\n");
     printf("   -x [1|2]        : set data representation [1: XCDR, 2: XCDR2]\n");
-    printf("   --type-uri <uri>  : URI of type definitions (eg: types)\n");
-    printf("   --type-file <path>: local file with type definitions (eg. sequences)\n");
-    printf("   --data-uri <uri>  : URI of data sample values (eg: data)\n");
-    printf("   --data-file <path>: local file with data sample values (format detected\n");
-    printf("                       from extension: .xml or .json)\n");
+    printf("   --type-folder <folder>: folder containing type definitions (eg: types)\n");
+    printf("   --type-file <file>    : type definition file name without extension\n");
+    printf("   --data-folder <folder>: folder containing data samples (eg: data)\n");
+    printf("   --data-file <file>    : data sample file name without extension\n");
     printf("   -w              : print Publisher's samples\n");
     printf("   --force-type-validation [t|f|d]: enable, disable or default value for\n");
     printf("                                 type_consistency.force_type_validation\n");
