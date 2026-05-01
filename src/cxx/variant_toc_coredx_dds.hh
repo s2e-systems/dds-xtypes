@@ -2,6 +2,7 @@
 #include <dds/dds.hh>
 #include <dds/dds_typesupport.hh>
 #include <dds/xtypes.hh>
+#include <dds/xtypes_dtype.h>
 
 #define DDS_BOOLEAN_TRUE         (1)
 #define DDS_BOOLEAN_FALSE        (0)
@@ -55,22 +56,56 @@ TypeConsistency_get_default(void) {
   return rval;
 }
 
-void disable_type_information(DDS::DomainParticipantQos &dp_qos) {}
+void disable_type_information(DDS::DomainParticipantQos &dp_qos)
+{
+#if (COREDX_DDS_VERSION_MAJOR >= 6)
+  dp_qos.discovery.enable_typelookup_service = 0;
+#else
+  /* TODO: has to be done at reader/writer qos */
+#endif
+}
+
+void set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
+{
+#if (COREDX_DDS_VERSION_MAJOR >= 6)
+  if (version == 1) {
+    dp_qos.discovery.send_typeobj_v1 = 1;
+    dp_qos.discovery.send_typeobj_v2 = 0;
+  } else if (version == 2) {
+    dp_qos.discovery.send_typeobj_v1 = 0;
+    dp_qos.discovery.send_typeobj_v2 = 1;
+  } else {
+    std::cerr << "Unsupported Type Object version: " << version
+              << ". Using default." << std::endl;
+  }
+#else
+  /* TODO: has to be done at reader/writer qos */
+#endif
+}
 
 DDS::DynamicType  *
-CREATE_TYPE( DDS::DomainParticipant * dp,
-             const char * types_uri,
+create_type( DDS::DomainParticipant * dp,
+             const char * type_folder,
+             const char * type_file,
              const char * type_name )
 {
   DDS::DynamicType               * dt     = NULL;
-  if ( dp && types_uri && type_name )
+
+  if ( ( type_folder == NULL ) ||
+       ( type_file == NULL ) ) {
+    return NULL;
+  }
+  
+  if ( dp )
     {
       DDS::DynamicTypeBuilderFactory * dtbf   =
         DDS::DynamicTypeBuilderFactoryXml::get_instance( );
       if ( dtbf )
         {
+          std::string file_path = std::string(type_folder) + "/xml/" + std::string(type_file) + ".xml";
+          
           DDS::DynamicTypeBuilder        * dtb  =
-            dtbf->create_type_w_uri ( types_uri,
+            dtbf->create_type_w_uri ( file_path.c_str(),
                                       type_name,
                                       NULL );
           if ( dtb )
@@ -84,7 +119,7 @@ CREATE_TYPE( DDS::DomainParticipant * dp,
 }
 
 DDS::ReturnCode_t
-REGISTER_TYPE( DDS::DomainParticipant * dp,
+register_type( DDS::DomainParticipant * dp,
                DDS::DynamicType       * dt,
                const char             * type_name )
 {
@@ -102,7 +137,7 @@ REGISTER_TYPE( DDS::DomainParticipant * dp,
 }
 
 void
-CLEANUP_TYPE( DDS::DomainParticipant * dp,
+cleanup_type( DDS::DomainParticipant * dp,
               DDS::DynamicType       * dt )
 {
   if ( dp && dt )
@@ -114,7 +149,7 @@ CLEANUP_TYPE( DDS::DomainParticipant * dp,
 }
 
 DDS::DynamicData *
-CREATE_DATA( DDS::DynamicType       * dt )
+create_data( DDS::DynamicType       * dt )
 {
   DDS::DynamicData * retval = NULL;
   DDS::DynamicDataFactory * ddf = DDS::DynamicDataFactory::get_instance();
@@ -126,37 +161,77 @@ CREATE_DATA( DDS::DynamicType       * dt )
 }
 
 DDS::ReturnCode_t
-INIT_DATA( DDS::DynamicData    * dd,
-           const char          * xml_data_uri,
-           const char          * json_data_uri )
+init_data( DDS::DynamicData    * dd,
+           const char *data_folder,
+           const char *data_file)
 {
   DDS::ReturnCode_t              retval = DDS::RETCODE_ERROR;
-  if ( dd )
+  if ( ( data_folder == NULL ) ||
+       ( data_file == NULL ) )
     {
-      fflush( stderr );
-      if ( xml_data_uri )
+      retval = DDS::RETCODE_OK;
+    }
+  else
+    {
+      if ( dd )
         {
-          retval = coredx::DynamicData_init_from_xmluri( dd, xml_data_uri );
-        }
-      else
-        {
-          /* no specific data, just init to 'defaults' */
-          fprintf( stderr, "[ No data to load. Using empty sample... ]\n" );
-          fflush( stderr );
-          retval = DDS::RETCODE_OK;
+          std::string file_path = std::string(data_folder) + "/xml/" + std::string(data_file) + ".xml";
+          retval = coredx::DynamicData_init_from_xmluri( dd, file_path.c_str() );
         }
     }
+
   return retval;
+}
+
+void
+print_typeid_v1(DDS::DynamicType *dt) {
+  DDS::TypeObject * tobj_v1 = DDS::DynamicType_to_TypeObject( dt );
+  if ( tobj_v1 )
+    {
+      // assume it is a constructed type (it should be)
+      uint64_t type_id = tobj_v1->the_type.constructed_type_id();
+      std::cout << "Type Object V1 - Type ID: " << type_id << std::endl;
+    }
+  delete tobj_v1;
+}
+
+void
+print_typeid_v2(DDS::DynamicType *dt) {
+  DDS_XTypes_TypeIdentifier tid;
+  DDS_XTypes_TypeIdentifier_init( &tid );
+  CDX::DynamicTypeHelper::DynamicType_to_TypeIdentifier( dt, &tid, DDS_XTypes_EK_COMPLETE );
+  char buf[128];
+  memset(buf, 0, sizeof(buf));
+  DDS_XTypes_TypeIdentifier_to_str( &tid, buf, 128 );
+  // advance past the prefix we add to the typeid string ("C_" or "M_")
+  char * buf_ptr = &buf[2];
+  std::cout << "Type Object V2 - Equivalence Hash: " << buf_ptr << std::endl;
+  
+  DDS_XTypes_TypeIdentifier_clear( &tid );
+}
+
+void
+print_typeid(DDS::DynamicType *dt, int version)
+{
+    if (version == 1) {
+        print_typeid_v1(dt);
+    } else if (version == 2) {
+        print_typeid_v2(dt);
+    } else {
+        std::cerr << "Unsupported Type Object version: " << version
+                << ". Cannot print type information." << std::endl;
+    }
 }
    
 void
-PRINT_DATA( DDS::DynamicData  * dd )
+print_data( DDS::DynamicData  * dd )
 {
   // coredx::DynamicData_print( stderr, dd, 0 );
   coredx::DynamicData_print_xml( stdout, dd, 0 );
 }
 
-void CLEANUP_DATA(DDS::DynamicData *dd)
+void
+cleanup_data( DDS::DynamicData *dd )
 {
   DDS::DynamicDataFactory * ddf = DDS::DynamicDataFactory::get_instance();
   ddf->delete_data( dd );
@@ -164,38 +239,46 @@ void CLEANUP_DATA(DDS::DynamicData *dd)
 
 
 bool
-CHECK_DATA(DDS::DynamicData *dd,
-           const char *xml_data_uri,
-           const char *json_data_uri)
+check_data( DDS::DynamicData *dd,
+            const char *data_folder,
+            const char *data_file )
 {
   bool retval = false;
-
-  if (dd == NULL && json_data_uri == NULL) {
-    return retval;
-  }
-
-  DDS::DynamicData *data_check =
-    CREATE_DATA( (DDS::DynamicType *) dd->get_type() );
   
-  if (data_check == NULL) {
-    retval = false;
-    goto done;
-  }
-  if (INIT_DATA(data_check, xml_data_uri, json_data_uri) != DDS_RETCODE_OK) {
-    retval = false;
-    goto done;
-  }
-
-  retval = dd->equals(data_check);
-  if ( !retval )
+  if ( ( data_folder == NULL ) ||
+       ( data_file == NULL ) )
     {
-      printf("Expected:\n");
-      PRINT_DATA( data_check );
+      retval = DDS::RETCODE_OK;
     }
-  
- done:
-  if (data_check != NULL) {
-    CLEANUP_DATA(data_check);
-  }
+  else
+    {
+      DDS::DynamicData *data_check =
+        create_data( (DDS::DynamicType *) dd->get_type() );
+      
+      if ( data_check == NULL ) {
+        retval = false;
+        
+      } else {
+
+        if ( init_data( data_check, data_folder, data_file ) != DDS_RETCODE_OK ) {
+          retval = false;
+          
+        } else {
+          
+          retval = dd->equals( data_check );
+          
+          if ( !retval )
+            {
+              printf("Expected:\n");
+              print_data( data_check );
+            }
+          
+        }
+        
+        if ( data_check != NULL ) {
+          cleanup_data( data_check );
+        }
+      }
+    }
   return retval;
 }

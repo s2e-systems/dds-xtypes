@@ -20,7 +20,8 @@
 #SEC_CSRCS   = ../security/set_sec_props_cpp.cc
 
 # Define our sources and objects
-EXECUTABLE        = toc_coredx_dds-${COREDX_VERSION}-test_main_linux
+EXECUTABLE        = toc_coredx_dds-${COREDX_VERSION}_test_main_linux
+ZIPFILE           = toc_coredx_dds-${COREDX_VERSION}_test_main_linux.zip
 
 # Publisher sources and objects
 test_main_coredx_CSRCS   = test_main.cxx
@@ -48,19 +49,31 @@ LIBS       =					\
 -ldds_cf_log					\
 -Wl,-Bdynamic 
 
+HAS_NSL := $(shell ls /usr/lib/libnsl.so /usr/lib64/libnsl.so 2>/dev/null | wc -l)
+
+ifeq (${HAS_NSL},0)
+  NSL_LIB=
+else
+  NSL_LIB=-lnsl
+endif
 CXXFLAGS   = -DTWINOAKS_COREDX -Wall -O2 -g ${INC_PATH} ${SEC_CFLAGS} -pthread
-LDFLAGS    = ${LIB_PATH} ${LIBS} -ldl -lnsl -lrt -pthread
+LDFLAGS    = ${LIB_PATH} ${LIBS} -ldl ${NSL_LIB} -lrt -pthread
 
 
 ##########################################################
 
-all: ${EXECUTABLE}
+all: ${EXECUTABLE} ${ZIPFILE}
 
 %.o: %.cxx
 	${CXX} ${CPPFLAGS} ${CXXFLAGS} -o $@ -c $<
 
 ${EXECUTABLE}: ${test_main_coredx_OBJS}
 	${CXX} -o $@ ${test_main_coredx_OBJS} ${LDFLAGS} 
+
+${ZIPFILE}: ${EXECUTABLE}
+	strip ${EXECUTABLE}
+	zip ${ZIPFILE} ${EXECUTABLE}
+
 
 ##########################################################
 # Rules for generating code from DDL
