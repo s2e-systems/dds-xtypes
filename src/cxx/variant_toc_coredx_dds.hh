@@ -169,7 +169,7 @@ init_data( DDS::DynamicData    * dd,
   if ( ( data_folder == NULL ) ||
        ( data_file == NULL ) )
     {
-      retval = DDS::RETCODE_OK;
+      // retval = DDS::RETCODE_OK;
     }
   else
     {
@@ -198,16 +198,29 @@ print_typeid_v1(DDS::DynamicType *dt) {
 void
 print_typeid_v2(DDS::DynamicType *dt) {
   DDS_XTypes_TypeIdentifier tid;
-  DDS_XTypes_TypeIdentifier_init( &tid );
-  CDX::DynamicTypeHelper::DynamicType_to_TypeIdentifier( dt, &tid, DDS_XTypes_EK_COMPLETE );
   char buf[128];
-  memset(buf, 0, sizeof(buf));
-  DDS_XTypes_TypeIdentifier_to_str( &tid, buf, 128 );
-  // advance past the prefix we add to the typeid string ("C_" or "M_")
-  char * buf_ptr = &buf[2];
-  std::cout << "Type Object V2 - Equivalence Hash: " << buf_ptr << std::endl;
+
+  // minimal typeid:
+  {
+    DDS_XTypes_TypeIdentifier_init( &tid );
+    CDX::DynamicTypeHelper::DynamicType_to_TypeIdentifier( dt, &tid, DDS_XTypes_EK_MINIMAL );
+    memset(buf, 0, sizeof(buf));
+    DDS_XTypes_TypeIdentifier_to_str( &tid, buf, 128 );
+    char * buf_ptr = &buf[2]; // advance past the prefix we add to the typeid string ("C_" or "M_")
+    std::cout << "Minimal Type Object V2 - Equivalence Hash: " << buf_ptr << std::endl;
+    DDS_XTypes_TypeIdentifier_clear( &tid );
+  }
+  // complete typeid:
+  {
+    DDS_XTypes_TypeIdentifier_init( &tid );
+    CDX::DynamicTypeHelper::DynamicType_to_TypeIdentifier( dt, &tid, DDS_XTypes_EK_COMPLETE );
+    memset(buf, 0, sizeof(buf));
+    DDS_XTypes_TypeIdentifier_to_str( &tid, buf, 128 );
+    char * buf_ptr = &buf[2]; // advance past the prefix we add to the typeid string ("C_" or "M_")
+    std::cout << "Complete Type Object V2 - Equivalence Hash: " << buf_ptr << std::endl;
+    DDS_XTypes_TypeIdentifier_clear( &tid );
+  }
   
-  DDS_XTypes_TypeIdentifier_clear( &tid );
 }
 
 void
@@ -226,7 +239,6 @@ print_typeid(DDS::DynamicType *dt, int version)
 void
 print_data( DDS::DynamicData  * dd )
 {
-  // coredx::DynamicData_print( stderr, dd, 0 );
   coredx::DynamicData_print_xml( stdout, dd, 0 );
 }
 
