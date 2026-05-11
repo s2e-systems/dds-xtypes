@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include "ndds/ndds_namespace_cpp.h"
@@ -46,7 +47,7 @@ get_type_support(DDS::DynamicType* dt) {
 const char *
 get_qos_policy_name(DDS_QosPolicyId_t policy_id)
 {
-    return DDS_QosPolicyId_to_string(policy_id); // not standard...
+    return DDS_QosPolicyId_to_string(policy_id);
 }
 
 void
@@ -101,15 +102,15 @@ print_type_objectV2(DDS::DynamicType *dt) {
 
     std::cout << "Complete Type Object V2 - Equivalence Hash: ";
     for (size_t i = 0; i < DDS_TYPEOBJECTV2_EQUIVALENCE_HASH_SIZE; ++i) {
-        // print the hash (array of octets) in hexadecimal readable format
-        std::cout << std::hex << static_cast<int>(completeHash[i]);
+        // print the hash (array of octets) in hexadecimal readable format, always two hex digits
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(completeHash[i]);
     }
     std::cout << std::endl;
 
     std::cout << "Minimal Type Object V2 - Equivalence Hash: ";
     for (size_t i = 0; i < DDS_TYPEOBJECTV2_EQUIVALENCE_HASH_SIZE; ++i) {
-        // print the hash (array of octets) in hexadecimal readable format
-        std::cout << std::hex << static_cast<int>(minimalHash[i]);
+        // print the hash (array of octets) in hexadecimal readable format, always two hex digits
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(minimalHash[i]);
     }
     std::cout << std::endl;
 
@@ -163,7 +164,7 @@ create_type(
 {
     const DDS::DynamicType *dt = NULL;
     DDS::DomainParticipantFactoryQos factory_qos;
-    if (type_folder == NULL && type_file == NULL) {
+    if (type_folder == NULL || type_file == NULL) {
         return NULL;
     }
     // resolve path: type_folder/xml/type_file.xml
@@ -246,7 +247,7 @@ init_data(
 {
     DDS::ReturnCode_t retval = DDS::RETCODE_ERROR;
 
-    if (data_folder == NULL && data_file == NULL) {
+    if (data_folder == NULL || data_file == NULL) {
         return retval;
     }
     // the path is composed by the data_folder + "/json/" + data_file
@@ -289,7 +290,7 @@ check_data(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
 {
     bool retval = false;
 
-    if (dd == NULL && data_file == NULL) {
+    if (dd == NULL || data_file == NULL || data_folder == NULL) {
         return retval;
     }
 
