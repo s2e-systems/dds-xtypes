@@ -8,6 +8,7 @@ use dust_dds::{
     },
     infrastructure::{
         error::DdsError,
+        listener::NO_LISTENER,
         qos::{DataReaderQos, DataWriterQos, PublisherQos, QosKind, SubscriberQos},
         qos_policy::{
             self, DataRepresentationQosPolicy, DurabilityQosPolicy, HistoryQosPolicy,
@@ -16,10 +17,9 @@ use dust_dds::{
             XCDR_DATA_REPRESENTATION, XCDR2_DATA_REPRESENTATION,
         },
         sample_info::{ANY_INSTANCE_STATE, ANY_SAMPLE_STATE, ANY_VIEW_STATE},
-        status::{InconsistentTopicStatus, NO_STATUS, StatusKind},
+        status::{NO_STATUS, StatusKind},
         time::DurationKind,
     },
-    listener::NO_LISTENER,
     publication::data_writer::DataWriter,
     subscription::data_reader::DataReader,
     xtypes::{
@@ -30,7 +30,6 @@ use dust_dds::{
 };
 use std::{
     fmt::Debug,
-    io::Write,
     process::{ExitCode, Termination},
     sync::mpsc::Receiver,
 };
@@ -276,122 +275,122 @@ impl DomainParticipantListener for Listener {}
 fn init_publisher(
     participant: &DomainParticipant,
     options: Options,
-    dynamic_type: &'static DynamicType,
+    dynamic_type: &'static dyn DynamicType,
 ) -> Result<DataWriter<DynamicData>, InitializeError> {
-    todo!();
-    // let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
-    // let type_name = options.type_name.clone().unwrap();
+    let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
+    let type_name = options.type_name.clone().unwrap();
 
-    // let topic = participant.create_topic::<DynamicData>(
-    //     &topic_name,
-    //     &type_name,
-    //     QosKind::Default,
-    //     NO_LISTENER,
-    //     NO_STATUS,
-    // )?;
+    let topic = participant.create_dynamic_topic(
+        &topic_name,
+        &type_name,
+        QosKind::Default,
+        NO_LISTENER,
+        NO_STATUS,
+        dynamic_type,
+    )?;
 
-    // let publisher_qos = QosKind::Specific(PublisherQos {
-    //     partition: options.partition_qos_policy(),
-    //     ..Default::default()
-    // });
-    // let publisher = participant.create_publisher(publisher_qos, NO_LISTENER, NO_STATUS)?;
+    let publisher_qos = QosKind::Specific(PublisherQos {
+        partition: options.partition_qos_policy(),
+        ..Default::default()
+    });
+    let publisher = participant.create_publisher(publisher_qos, NO_LISTENER, NO_STATUS)?;
 
-    // let mut data_writer_qos = DataWriterQos {
-    //     durability: options.durability_qos_policy(),
-    //     reliability: options.reliability_qos_policy(),
-    //     representation: options.data_representation_qos_policy(),
-    //     ownership: options.ownership_qos_policy(),
-    //     history: options.history_depth_qos_policy(),
-    //     ..Default::default()
-    // };
-    // if options.deadline_interval > 0 {
-    //     data_writer_qos.deadline.period =
-    //         DurationKind::Finite(core::time::Duration::from_secs(options.deadline_interval).into());
-    // }
-    // if options.ownership_qos_policy().kind == OwnershipQosPolicyKind::Exclusive {
-    //     data_writer_qos.ownership_strength = options.ownership_strength_qos_policy();
-    // }
+    let mut data_writer_qos = DataWriterQos {
+        durability: options.durability_qos_policy(),
+        reliability: options.reliability_qos_policy(),
+        representation: options.data_representation_qos_policy(),
+        ownership: options.ownership_qos_policy(),
+        history: options.history_depth_qos_policy(),
+        ..Default::default()
+    };
+    if options.deadline_interval > 0 {
+        data_writer_qos.deadline.period =
+            DurationKind::Finite(core::time::Duration::from_secs(options.deadline_interval).into());
+    }
+    if options.ownership_qos_policy().kind == OwnershipQosPolicyKind::Exclusive {
+        data_writer_qos.ownership_strength = options.ownership_strength_qos_policy();
+    }
 
-    // let data_writer = publisher.create_datawriter::<DynamicData>(
-    //     &topic,
-    //     QosKind::Specific(data_writer_qos),
-    //     NO_LISTENER,
-    //     NO_STATUS,
-    // )?;
+    let data_writer = publisher.create_datawriter::<DynamicData>(
+        &topic,
+        QosKind::Specific(data_writer_qos),
+        NO_LISTENER,
+        NO_STATUS,
+    )?;
 
-    // Ok(data_writer)
+    Ok(data_writer)
 }
 
 fn run_publisher(
     data_writer: &DataWriter<DynamicData>,
     options: Options,
-    dynamic_type: &'static DynamicType,
+    dynamic_type: &'static dyn DynamicType,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
-    todo!();
-    // let mut dd = DynamicDataFactory::create_data(dynamic_type.clone());
+    let mut dd = DynamicDataFactory::create_data(dynamic_type);
 
-    // // Attempt to load JSON data into DynamicData
-    // if let (Some(data_folder), Some(data_file)) = (&options.data_folder, &options.data_file) {
-    //     let file_path = format!("{}/json/{}.json", data_folder, data_file);
-    //     if let Ok(content) = std::fs::read_to_string(&file_path) {
-    //         // from_string is not currently implemented in dust_dds for DynamicData
-    //         // dd.from_string(&content);
-    //         todo!("Parse JSON and set fields in DynamicData")
-    //     }
-    // }
+    // Attempt to load JSON data into DynamicData
+    if let (Some(data_folder), Some(data_file)) = (&options.data_folder, &options.data_file) {
+        let file_path = format!("{}/xml/{}.xml", data_folder, data_file);
+        if let Ok(content) = std::fs::read_to_string(&file_path) {
+            dd.from_xml(&content)
+                .map_err(|e| RunningError(format!("{e:?}")))?;
+        }
+    }
 
-    // while all_done.try_recv().is_err() {
-    //     if options.print_writer_samples {
-    //         println!(" Wrote: DynamicData sample");
-    //     }
-    //     // Write dynamic data
-    //     data_writer.write(dd.clone(), None).ok();
-    //     std::thread::sleep(std::time::Duration::from_secs(1));
-    // }
-    // Ok(())
+    while all_done.try_recv().is_err() {
+        if options.print_writer_samples {
+            println!(" Wrote: DynamicData sample");
+        }
+        // Write dynamic data
+        data_writer.write(dd.clone(), None).ok();
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+    Ok(())
 }
 
 fn init_subscriber(
     participant: &DomainParticipant,
     options: Options,
-    dynamic_type: &'static DynamicType,
+    dynamic_type: &'static dyn DynamicType,
 ) -> Result<DataReader<DynamicData>, InitializeError> {
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
 
-    todo!();
-    // let topic = participant.create_topic::<DynamicData>(
-    //     &topic_name,
-    //     &type_name,
-    //     QosKind::Default,
-    //     NO_LISTENER,
-    //     NO_STATUS,
-    // )?;
+    let topic = participant
+        .create_dynamic_topic(
+            &topic_name,
+            &type_name,
+            QosKind::Default,
+            NO_LISTENER,
+            NO_STATUS,
+            dynamic_type,
+        )
+        .unwrap();
 
-    // let subscriber_qos = QosKind::Specific(SubscriberQos {
-    //     partition: options.partition_qos_policy(),
-    //     ..Default::default()
-    // });
-    // let subscriber = participant.create_subscriber(subscriber_qos, NO_LISTENER, NO_STATUS)?;
+    let subscriber_qos = QosKind::Specific(SubscriberQos {
+        partition: options.partition_qos_policy(),
+        ..Default::default()
+    });
+    let subscriber = participant.create_subscriber(subscriber_qos, NO_LISTENER, NO_STATUS)?;
 
-    // let mut data_reader_qos = DataReaderQos {
-    //     durability: options.durability_qos_policy(),
-    //     reliability: options.reliability_qos_policy(),
-    //     representation: options.data_representation_qos_policy(),
-    //     ownership: options.ownership_qos_policy(),
-    //     history: options.history_depth_qos_policy(),
-    //     ..Default::default()
-    // };
-    // if options.deadline_interval > 0 {
-    //     data_reader_qos.deadline.period =
-    //         DurationKind::Finite(core::time::Duration::from_secs(options.deadline_interval).into());
-    // }
-    // if options.timebasedfilter_interval > 0 {
-    //     data_reader_qos.time_based_filter.minimum_separation = DurationKind::Finite(
-    //         core::time::Duration::from_secs(options.timebasedfilter_interval).into(),
-    //     );
-    // }
+    let mut data_reader_qos = DataReaderQos {
+        durability: options.durability_qos_policy(),
+        reliability: options.reliability_qos_policy(),
+        representation: options.data_representation_qos_policy(),
+        ownership: options.ownership_qos_policy(),
+        history: options.history_depth_qos_policy(),
+        ..Default::default()
+    };
+    if options.deadline_interval > 0 {
+        data_reader_qos.deadline.period =
+            DurationKind::Finite(core::time::Duration::from_secs(options.deadline_interval).into());
+    }
+    if options.timebasedfilter_interval > 0 {
+        data_reader_qos.time_based_filter.minimum_separation = DurationKind::Finite(
+            core::time::Duration::from_secs(options.timebasedfilter_interval).into(),
+        );
+    }
 
     // // Set type consistency enforcement based on arguments
     // let mut type_consistency = TypeConsistencyEnforcementQosPolicy::default();
@@ -460,48 +459,47 @@ fn init_subscriber(
 
     // data_reader_qos.type_consistency = type_consistency;
 
-    // let data_reader = subscriber.create_datareader::<DynamicData>(
-    //     &topic,
-    //     QosKind::Specific(data_reader_qos),
-    //     NO_LISTENER,
-    //     NO_STATUS,
-    // )?;
+    let data_reader = subscriber.create_datareader::<DynamicData>(
+        &topic,
+        QosKind::Specific(data_reader_qos),
+        NO_LISTENER,
+        NO_STATUS,
+    )?;
 
-    // Ok(data_reader)
+    Ok(data_reader)
 }
 
 fn run_subscriber(
     data_reader: &DataReader<DynamicData>,
-    options: Options,
-    dynamic_type: &'static DynamicType,
+    _options: Options,
+    _dynamic_type: &'static dyn DynamicType,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
     while all_done.try_recv().is_err() {
-        todo!();
-        // let mut previous_handle = None;
-        // loop {
-        // let max_samples = i32::MAX;
-        //  data_reader.take_next_instance(
-        //     max_samples,
-        //     previous_handle,
-        //     ANY_SAMPLE_STATE,
-        //     ANY_VIEW_STATE,
-        //     ANY_INSTANCE_STATE,
-        // );
-        // match read_result {
-        //     Ok(samples) => {
-        //         for sample in samples {
-        //             if sample.sample_info.valid_data {
-        //                 println!("sample_received()");
-        //                 // TODO: Print the sample data and compare with loaded data
-        //             }
-        //             previous_handle = Some(sample.sample_info.instance_handle);
-        //         }
-        //         std::thread::sleep(std::time::Duration::from_millis(100));
-        //     }
-        //     Err(_) => break,
-        // }
-        // }
+        let mut previous_handle = None;
+        loop {
+            let max_samples = i32::MAX;
+            let read_result = data_reader.take_next_instance(
+                max_samples,
+                previous_handle,
+                ANY_SAMPLE_STATE,
+                ANY_VIEW_STATE,
+                ANY_INSTANCE_STATE,
+            );
+            match read_result {
+                Ok(samples) => {
+                    for sample in samples {
+                        if sample.sample_info.valid_data {
+                            println!("sample_received()");
+                            // TODO: Print the sample data and compare with loaded data
+                        }
+                        previous_handle = Some(sample.sample_info.instance_handle);
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+                Err(_) => break,
+            }
+        }
     }
     Ok(())
 }
@@ -593,16 +591,18 @@ fn main() -> Result<(), Return> {
     })?;
 
     // Create the type
-    let mut dt: Option<&'static DynamicType> = None;
+    let mut dt: Option<&'static dyn DynamicType> = None;
     if let (Some(type_folder), Some(type_file), Some(type_name)) =
         (&options.type_folder, &options.type_file, &options.type_name)
     {
         let file_path = format!("{}/xml/{}.xml", type_folder, type_file);
+        let type_xml = std::fs::read_to_string(file_path).unwrap();
         // This function is unimplemented in dust_dds currently
+        println!("type_name {type_name}");
         let type_builder =
-            DynamicTypeBuilderFactory::create_type_w_uri(file_path, type_name.clone(), vec![]);
-        todo!()
-        // dt = Some(type_builder.build());
+            DynamicTypeBuilderFactory::create_type_w_document(&type_xml, type_name, vec![])
+                .unwrap();
+        dt = Some(type_builder.build());
     }
 
     if dt.is_none() {
