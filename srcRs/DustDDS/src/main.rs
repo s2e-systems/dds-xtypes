@@ -289,6 +289,8 @@ fn init_publisher(
         dynamic_type,
     )?;
 
+    println!("Create topic: {}", topic_name);
+
     let publisher_qos = QosKind::Specific(PublisherQos {
         partition: options.partition_qos_policy(),
         ..Default::default()
@@ -310,6 +312,8 @@ fn init_publisher(
     if options.ownership_qos_policy().kind == OwnershipQosPolicyKind::Exclusive {
         data_writer_qos.ownership_strength = options.ownership_strength_qos_policy();
     }
+
+    println!("Create writer for topic: {} type: {}", topic_name, type_name);
 
     let data_writer = publisher.create_datawriter::<DynamicData>(
         &topic,
@@ -340,7 +344,7 @@ fn run_publisher(
 
     while all_done.try_recv().is_err() {
         if options.print_writer_samples {
-            println!(" Wrote: DynamicData sample");
+            println!(" Wrote:");
         }
         // Write dynamic data
         data_writer.write(dd.clone(), None).ok();
@@ -367,6 +371,8 @@ fn init_subscriber(
             dynamic_type,
         )
         .unwrap();
+
+    println!("Create topic: {}", topic_name);
 
     let subscriber_qos = QosKind::Specific(SubscriberQos {
         partition: options.partition_qos_policy(),
@@ -459,6 +465,8 @@ fn init_subscriber(
 
     // data_reader_qos.type_consistency = type_consistency;
 
+    println!("Create reader for topic: {}", topic_name);
+
     let data_reader = subscriber.create_datareader::<DynamicData>(
         &topic,
         QosKind::Specific(data_reader_qos),
@@ -471,10 +479,21 @@ fn init_subscriber(
 
 fn run_subscriber(
     data_reader: &DataReader<DynamicData>,
-    _options: Options,
-    _dynamic_type: &'static dyn DynamicType,
+    options: Options,
+    dynamic_type: &'static dyn DynamicType,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
+    let mut expected_data = None;
+    if let (Some(data_folder), Some(data_file)) = (&options.data_folder, &options.data_file) {
+        let file_path = format!("{}/xml/{}.xml", data_folder, data_file);
+        if let Ok(content) = std::fs::read_to_string(&file_path) {
+            let mut dd = DynamicDataFactory::create_data(dynamic_type);
+            if dd.from_xml(&content).is_ok() {
+                expected_data = Some(dd);
+            }
+        }
+    }
+
     while all_done.try_recv().is_err() {
         let mut previous_handle = None;
         loop {
@@ -491,7 +510,13 @@ fn run_subscriber(
                     for sample in samples {
                         if sample.sample_info.valid_data {
                             println!("sample_received()");
-                            // TODO: Print the sample data and compare with loaded data
+                            if let Some(expected) = &expected_data {
+                                if sample.data.as_ref() == Some(expected) {
+                                    println!("Received sample is the same as loaded");
+                                } else {
+                                    println!("Received sample is not the same as loaded");
+                                }
+                            }
                         }
                         previous_handle = Some(sample.sample_info.instance_handle);
                     }
@@ -636,6 +661,8 @@ fn main() -> Result<(), Return> {
             description: e.0,
         })?;
     }
+
+    println!("Done.");
 
     Ok(())
 }
