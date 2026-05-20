@@ -70,39 +70,36 @@ class Arguments:
 
 ########
 #
-def main():
+def get_type_ids(exe, test_suite, type_object_version, verbose=False, print_live=False):
 
-    parser = Arguments.parser()
-    args = parser.parse_args()
-    
-    if args.verbose:
-        print(f'exec: {args.exe}' )
-        print(f'test suite: {args.test_suite}')
-        
+    if verbose:
+        print(f'exec: {exe}' )
+        print(f'test suite: {test_suite}')
+
     re_TypeFile_arg = re.compile(r"^.*--type-file (\S*).*$")
     re_TypeName_arg = re.compile(r"^.*-y (\S*).*$")
     re_DataFile_arg = re.compile(r"^.*--data-file (\S*).*$")
 
     test_types = defaultdict(list)
-    
-    t_suite_module = importlib.import_module(args.test_suite)
-        
+
+    t_suite_module = importlib.import_module(test_suite)
+
     # check that the test_cases selected or disabled are in the test_suite and
     # exit the application if they are not.
     for test_suite_name, t_suite_dict in inspect.getmembers(t_suite_module):
         if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
-            if args.verbose:
+            if verbose:
                 print(f'Test Suite {test_suite_name}' )
             for test_case_name, test_case_parameters in t_suite_dict.items():
-                
+
                 pub_type_file=None
                 pub_data_file=None
                 pub_type=None
-                
+
                 sub_type_file=None
                 sub_data_file=None
                 sub_type=None
-                
+
                 apps = test_case_parameters['apps']
                 pub = apps[0]
                 sub = apps[1]
@@ -116,13 +113,13 @@ def main():
                         if m:
                             pub_type_file = m.group(1)
                             sub_type_file = m.group(1)
-                
+
                 #   2) check in pub command:
                 if not pub_type_file:
                     m = re_TypeFile_arg.match(pub)
                     if m:
                         pub_type_file = m.group(1)
-                
+
                 #   3) check in sub command:
                 if not sub_type_file:
                     m = re_TypeFile_arg.match(sub)
@@ -146,9 +143,9 @@ def main():
                 m = re_DataFile_arg.match(sub)
                 if m:
                     sub_data_file = m.group(1)
-                    
+
                 # summarize:
-                if args.verbose:
+                if verbose:
                     print(f'   test case: {test_case_name}')
                     print(f'      pub xml type file: {pub_type_file}')
                     print(f'      pub type: {pub_type}')
@@ -173,57 +170,92 @@ def main():
     #   for each Type File:
     #     print out each Type Name and its corresponding TypeIdentifier
     re_typeid       = re.compile(r"^.*Type ID: (\S*).*$", re.M )  # v1 typeid (uint64)
-    
+
     re_completeHash = re.compile(r"^Complete.*:\s(\S*).*$", re.M) # v2 complete equivalence hash
     re_minimalHash  = re.compile(r"^Minimal.*:\s(\S*).*$", re.M)  # v2 minimal equivalence hash
 
-    exetimeout = 0.1 # the typeid output is done fairly quickly, so no need to wait very long...
-    
+    exetimeout = 1.0
+    results = []
+
     for type_file, params in test_types.items():
-        print(f'{type_file} : ')
-        
         for typ, datafile in params:
             # --data-file bad_file_so_we_exit_fast
-            command = f'{args.exe} -P --type-folder types --type-file {type_file} --data-folder data -y {typ} --type-object-version {args.type_object_version} --print-typeid'
-            
-            if args.verbose:
+            command = f'{exe} -P --type-folder types --type-file {type_file} --data-folder data -y {typ} --type-object-version {type_object_version} --print-typeid'
+
+            if verbose:
                 print(f'{command} --data-file {datafile}') # we append the data file, so it is easy to run the full command later for analysis...
-                
+
             try:
                 process = subprocess.run( command, capture_output=True, text=True, shell=True, timeout=exetimeout )
                 output_txt = process.stdout
             except subprocess.TimeoutExpired as e:
-                output_txt = e.stdout.decode()
-                
+                # TimeoutExpired may carry str, bytes, or None for stdout/stderr.
+                # Normalize safely so timeout cases do not crash this script.
+                out = e.stdout if e.stdout is not None else ''
+                err = e.stderr if e.stderr is not None else ''
+
+                if isinstance(out, bytes):
+                    out = out.decode(errors='replace')
+                if isinstance(err, bytes):
+                    err = err.decode(errors='replace')
+
+                output_txt = out
+                if err:
+                    output_txt = f'{output_txt}\n{err}'
+
             #print(f'output:\n {output_txt}' )
-            
-            if args.type_object_version == "1":
+
+            if type_object_version == "1":
                 reout = re_typeid.search(output_txt)
-                if reout:
-                    typeid=reout.group(1)
-                else:
-                    typeid='<unkn>'
-                print(f'   {typ:>45} : {typeid}')
-                
+                entry = {
+                    'name': f'{type_file} {typ}',
+                    'kind': 'typeid',
+                    'value': reout.group(1) if reout else 'not found',
+                }
+                results.append(entry)
+                if print_live:
+                    print(f'   {entry["name"]:>45} : [ {entry["kind"]:8} ] {entry["value"]}')
+
             else:
-                
                 complete = re_completeHash.search(output_txt)
-                if complete:
-                    ctid = complete.group(1)
-                else:
-                    ctid = '<not found>'
-                print(f'   {typ:>45} : [ complete ] {ctid}')
-                    
-                minimal  = re_minimalHash.search(output_txt) 
-                if minimal:
-                    mtid = minimal.group(1)
-                else:
-                    mtid = '<not found>'
-                print(f'   {typ:>45} : [ minimal  ] {mtid}' )
-                
-                
+                entry = {
+                    'name': f'{type_file} {typ}',
+                    'kind': 'complete',
+                    'value': complete.group(1) if complete else 'not found',
+                }
+                results.append(entry)
+                if print_live:
+                    print(f'   {entry["name"]:>45} : [ {entry["kind"]:8} ] {entry["value"]}')
+
+                minimal = re_minimalHash.search(output_txt)
+                entry = {
+                    'name': f'{type_file} {typ}',
+                    'kind': 'minimal',
+                    'value': minimal.group(1) if minimal else 'not found',
+                }
+                results.append(entry)
+                if print_live:
+                    print(f'   {entry["name"]:>45} : [ {entry["kind"]:8} ] {entry["value"]}')
+
+    return results
+
+
 ########
-# run main        
+#
+def main():
+    parser = Arguments.parser()
+    args = parser.parse_args()
+    get_type_ids(
+        exe=args.exe,
+        test_suite=args.test_suite,
+        type_object_version=args.type_object_version,
+        verbose=args.verbose,
+        print_live=True,
+    )
+
+
+########
+# run main
 if __name__ == '__main__':
     main()
-    
+

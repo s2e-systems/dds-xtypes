@@ -24,7 +24,8 @@ import platform
 if __name__ == "__main__" and platform.system() == "Darwin":
     multiprocessing.set_start_method('fork')
 
-from rtps_test_utilities import ReturnCode, log_message, no_check, \
+import print_ids
+from interoperability_test_utilities import ReturnCode, log_message, no_check, \
         remove_ansi_colors, check_pub_sub_app_params
 
 # This parameter is used to save the samples the Publisher sends.
@@ -359,7 +360,6 @@ def run_publisher_test(
         produced_code[produced_code_index] = ReturnCode.WRITER_UNEXPECTED_ERROR
     return
 
-
 def run_test(
     name_executable_pub:str,
     name_executable_sub:str,
@@ -583,6 +583,60 @@ def run_test(
     for element in temporary_file:
         element.close()
 
+
+def add_type_id_results_to_suite(
+        suite: junitparser.TestSuite,
+        publisher_type_ids: "list[dict]",
+        subscriber_type_ids: "list[dict]"):
+    """ Compare publisher and subscriber TypeIdentifiers and add one
+        TestCase per unique (name, kind) pair to the suite.
+
+        A TestCase passes when both sides report the same value.
+        A TestCase fails when the values differ or one side is missing.
+
+        suite <<inout>>: JUnit TestSuite to add the TestCases to.
+        publisher_type_ids <<in>>: list of dicts returned by get_type_ids
+                for the publisher executable.
+        subscriber_type_ids <<in>>: list of dicts returned by get_type_ids
+                for the subscriber executable.
+    """
+    pub_map = {(e['name'], e['kind']): e['value'] for e in publisher_type_ids}
+    sub_map = {(e['name'], e['kind']): e['value'] for e in subscriber_type_ids}
+
+    all_keys = sorted(set(pub_map) | set(sub_map))
+
+    for name, kind in all_keys:
+        case = junitparser.TestCase(f'typeid {name} [{kind}]')
+        pub_val = pub_map.get((name, kind), 'missing')
+        sub_val = sub_map.get((name, kind), 'missing')
+
+        pub_display = 'PUB_UNSUPPORTED' if 'not found' in pub_val else pub_val
+        sub_display = 'SUB_UNSUPPORTED' if 'not found' in sub_val else sub_val
+
+        message = \
+            '<table> ' \
+                '<tr> ' \
+                    '<th/> ' \
+                    '<th> Publisher TypeId </th> ' \
+                    '<th> Subscriber TypeId </th> ' \
+                '</tr> ' \
+                '<tr> ' \
+                    f'<th> {kind} </th> ' \
+                    f'<th> {pub_display} </th> ' \
+                    f'<th> {sub_display} </th> ' \
+                '</tr> ' \
+            '</table>'
+
+        if pub_val != sub_val:
+            case.result = [junitparser.Failure(message)]
+            print(f'{case.name} : ERROR')
+        else:
+            case.system_out = message
+            print(f'{case.name} : OK')
+
+        suite.add_testcase(case)
+
+
 class Arguments:
     def parser():
         parser = argparse.ArgumentParser(
@@ -679,6 +733,12 @@ class Arguments:
                 'This option is not supported with --test. (Default: None)')
 
         out_opts = parser.add_argument_group(title='output options')
+        out_opts.add_argument('--disable-typeid-tests',
+            default=False,
+            required=False,
+            action='store_true',
+            help='Skip the TypeIdentifier comparison tests and do not '
+                'add them to the report. (Default: False).')
         out_opts.add_argument('-o', '--output-name',
             required=False,
             metavar='filename',
@@ -716,6 +776,7 @@ def main():
         'test_cases_disabled': args.disable_test,
         'data_representation': args.data_representation,
         'type_object_version': args.type_object_version,
+        'disable_typeid_tests': args.disable_typeid_tests,
     }
 
     # The executables's names are supposed to follow the pattern:
@@ -847,6 +908,19 @@ def main():
                             check_function=check_function)
                     case.time = (datetime.now() - now_test_case).total_seconds()
                     suite.add_testcase(case)
+
+    if not options['disable_typeid_tests']:
+        publisher_type_ids = print_ids.get_type_ids(
+                exe=options['publisher'],
+                test_suite=options['test_suite'],
+                type_object_version=options['type_object_version'])
+
+        subscriber_type_ids = print_ids.get_type_ids(
+                exe=options['subscriber'],
+                test_suite=options['test_suite'],
+                type_object_version=options['type_object_version'])
+
+        add_type_id_results_to_suite(suite, publisher_type_ids, subscriber_type_ids)
 
     suite.time = (datetime.now() - now).total_seconds()
     xml.add_testsuite(suite)
