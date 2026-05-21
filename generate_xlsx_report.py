@@ -34,7 +34,7 @@ class TestStatus(Enum):
     PUB_UNSUPPORTED = 3
     SUB_UNSUPPORTED = 4
     PUB_SUB_UNSUPPORTED = 5
-    NOT_MATCHING = 6
+    NOT_EQUAL = 6
 
 class XlxsReportArgumentParser:
     """Class that parse the arguments of the application."""
@@ -107,7 +107,7 @@ class ProductUtils:
         elif 'hdds' in product.lower():
             return 'HDDS ' + re.search(r'([\d.]+)', product).group(1)
         elif 'cyclone' in product.lower():
-            return 'Cyclone DDS'
+            return 'Cyclone DDS ' + re.search(r'([\d.]+)', product).group(1)
         else:
             raise RuntimeError('Impossible to get product name: ' + product)
 
@@ -291,7 +291,7 @@ class JunitData:
                     status = TestStatus.SUB_UNSUPPORTED
                 elif "typeid" in case.name:
                     # different typeids in DDS does not mean an error
-                    status = TestStatus.NOT_MATCHING
+                    status = TestStatus.NOT_EQUAL
                 else:
                     status = TestStatus.FAILED
 
@@ -741,8 +741,8 @@ class XlsxReport:
                 str_result = 'SUB UNSUPPORTED'
             elif element.get_status() == TestStatus.PUB_SUB_UNSUPPORTED:
                 str_result = 'PUB/SUB UNSUPPORTED'
-            elif element.get_status() == TestStatus.NOT_MATCHING:
-                str_result = 'NOT MATCHING'
+            elif element.get_status() == TestStatus.NOT_EQUAL:
+                str_result = 'NOT EQUAL'
             else:
                 str_result = 'UNKNOWN'
 
