@@ -131,7 +131,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: interoperability_report_complete
+          name: xtypes_interoperability_report
           path: |
             ./interoperability_report.html
             ./junit_interoperability_report.xml
