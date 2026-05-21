@@ -9,6 +9,7 @@
 #################################################################
 
 import importlib
+import os
 import time
 import re
 import pexpect
@@ -359,6 +360,102 @@ def run_publisher_test(
     except OSError as e:
         produced_code[produced_code_index] = ReturnCode.WRITER_UNEXPECTED_ERROR
     return
+
+def build_unsupported_test_case(
+        test_id: str,
+        test_case_parameters: dict,
+        is_pub_unsupported: bool,
+        is_sub_unsupported: bool) -> junitparser.TestCase:
+    """ Build a junitparser.TestCase for a test that is not supported by one
+        or both sides, without running the actual test application.
+
+        The failure message contains an HTML table with the expected code and
+        the produced code (PUB_UNSUPPORTED_FEATURE / SUB_UNSUPPORTED_FEATURE)
+        for each entity, mirroring the
+        format used by run_test() when a test fails.
+
+        test_id <<in>>: full test identifier (<dict_name>_<test_case_name>).
+        test_case_parameters <<in>>: the test parameters dict from the test suite.
+        is_pub_unsupported <<in>>: True when the Publisher side is unsupported.
+        is_sub_unsupported <<in>>: True when the Subscriber side is unsupported.
+
+        Returns a junitparser.TestCase with a Failure result.
+    """
+    expected_codes = test_case_parameters['expected_codes']
+    parameters_raw = test_case_parameters['apps']
+    if 'common_args' in test_case_parameters:
+        parameters_raw = [s + f' {test_case_parameters["common_args"][0]}'
+                          for s in parameters_raw]
+    parameters_raw = check_pub_sub_app_params(parameters_raw)
+
+    # build entity labels (Publisher_N / Subscriber_N)
+    entity_labels = []
+    pub_idx = sub_idx = 0
+    for param in parameters_raw:
+        if '-P ' in param or param.endswith('-P'):
+            pub_idx += 1
+            entity_labels.append(f'Publisher_{pub_idx}')
+        else:
+            sub_idx += 1
+            entity_labels.append(f'Subscriber_{sub_idx}')
+
+    unsupported_labels = []
+    if is_pub_unsupported:
+        unsupported_labels.append('PUB_UNSUPPORTED_FEATURE')
+    if is_sub_unsupported:
+        unsupported_labels.append('SUB_UNSUPPORTED_FEATURE')
+
+    message = \
+        '<table> ' \
+            '<tr> ' \
+                '<th/> ' \
+                '<th> Expected Code </th> ' \
+                '<th> Code Produced </th> ' \
+            '</tr> '
+    for i, label in enumerate(entity_labels):
+        is_entity_pub = 'Publisher' in label
+        if is_entity_pub and is_pub_unsupported:
+            produced = 'PUB_UNSUPPORTED_FEATURE'
+        elif not is_entity_pub and is_sub_unsupported:
+            produced = 'SUB_UNSUPPORTED_FEATURE'
+        else:
+            produced = expected_codes[i].name
+        message += \
+            '<tr> ' \
+                f'<th> {label} </th> ' \
+                f'<th> {expected_codes[i].name} </th> ' \
+                f'<th> {produced} </th> ' \
+            '</tr>'
+    message += '</table>'
+    for i, label in enumerate(entity_labels):
+        is_entity_pub = 'Publisher' in label
+        if is_entity_pub and is_pub_unsupported:
+            info_text = 'This test is not supported by the Publisher.'
+        elif not is_entity_pub and is_sub_unsupported:
+            info_text = 'This test is not supported by the Subscriber.'
+        else:
+            info_text = ('This test has not run because the '
+                         + ('Publisher' if not is_entity_pub else 'Subscriber')
+                         + ' does not support this use case.')
+        message += (f'<br><strong> Information {label} </strong>'
+                    f'<br> {info_text} <br>')
+
+    case = junitparser.TestCase(test_id)
+    case.result = [junitparser.Failure(message)]
+
+    for i, label in enumerate(entity_labels):
+        is_entity_pub = 'Publisher' in label
+        if is_entity_pub and is_pub_unsupported:
+            code_found = 'PUB_UNSUPPORTED_FEATURE'
+        elif not is_entity_pub and is_sub_unsupported:
+            code_found = 'SUB_UNSUPPORTED_FEATURE'
+        else:
+            code_found = 'TEST_NOT_RUN'
+        print(f'{label} expected code: {expected_codes[i].name}; '
+              f'Code found: {code_found}')
+
+    return case
+
 
 def run_test(
     name_executable_pub:str,
@@ -751,6 +848,28 @@ class Arguments:
 
         return parser
 
+def load_not_supported_manifest(filepath: str) -> set:
+    """ Load a not-supported manifest file and return a set of test IDs.
+
+        Each line in the file contains one full test ID
+        (format: <dict_name>_<test_case_name>).
+        Blank lines and lines starting with '#' are ignored.
+
+        filepath <<in>>: path to the manifest file, or None.
+
+        Returns a (possibly empty) set of test ID strings.
+    """
+    if filepath is None or not exists(filepath):
+        return set()
+    not_supported = set()
+    with open(filepath) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                not_supported.add(line)
+    return not_supported
+
+
 # this function checks if the test case exist in the test suite
 def are_tests_in_test_suite(test_suite, suite_name, test_cases, verbosity):
     all_test_cases_exist = True
@@ -815,6 +934,12 @@ def main():
     timeout = 10
     now = datetime.now()
 
+    _manifest_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'unsupported_test_manifest')
+    pub_not_supported = load_not_supported_manifest(
+        os.path.join(_manifest_dir, f'{name_publisher}.txt'))
+    sub_not_supported = load_not_supported_manifest(
+        os.path.join(_manifest_dir, f'{name_subscriber}.txt'))
+
     t_suite_module = importlib.import_module(options['test_suite'])
 
     # check that the test_cases selected or disabled are in the test_suite and
@@ -867,6 +992,18 @@ def main():
                     continue
                 else:
                     # if the test case is processed
+
+                    # check if the test is supported or not before running it
+                    test_id = f'{test_suite_name}_{test_case_name}'
+                    is_pub_unsupported = test_id in pub_not_supported
+                    is_sub_unsupported = test_id in sub_not_supported
+                    if is_pub_unsupported or is_sub_unsupported:
+                        case = build_unsupported_test_case(
+                            test_id, test_case_parameters,
+                            is_pub_unsupported, is_sub_unsupported)
+                        suite.add_testcase(case)
+                        continue
+
                     parameters = test_case_parameters['apps']
                     if 'common_args' in test_case_parameters:
                         common_args = test_case_parameters['common_args']
