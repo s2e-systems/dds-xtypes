@@ -18,7 +18,7 @@ jobs:
     - name: Generate timestamp file
       run: date '+%Y-%m-%d-%H_%M_%S' > timestamp
     - name: Upload timestamp file
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: timestamp
         path: |
@@ -34,7 +34,7 @@ jobs:
 
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - uses: actions/setup-python@v5
       with:
         python-version: '3.11.4'
@@ -52,8 +52,8 @@ jobs:
       timeout-minutes: 120
       continue-on-error: true
       run: |
-        publisher_exe=executables/${{ matrix.publisher }}*shape_main_linux
-        subscriber_exe=executables/${{ matrix.subscriber }}*shape_main_linux
+        publisher_exe=executables/${{ matrix.publisher }}*test_main_linux
+        subscriber_exe=executables/${{ matrix.subscriber }}*test_main_linux
         output_file=junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
         typeid_output_file=junit_typeid_report-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
         extra_args=""
@@ -75,11 +75,11 @@ jobs:
         # Run TypeId tests
         python3 interoperability_report.py --publisher $publisher_exe --subscriber $subscriber_exe --output-name $typeid_output_file --enable-typeid-tests
     - name: Download timestamp
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: timestamp
     - name: Upload report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}
         path: |
@@ -92,9 +92,9 @@ jobs:
     needs: run_tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: junit_report-*
           merge-multiple: true
@@ -124,12 +124,12 @@ jobs:
           output: ./typeid_interoperability_report.html
           fail: false
       - name: Download timestamp
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: timestamp
       - name: Attach the report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: interoperability_report_complete
           path: |
