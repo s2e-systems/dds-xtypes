@@ -71,9 +71,9 @@ jobs:
           extra_args="--periodic-announcement 5000"
         fi
         # Run normal interoperability tests
-        python3 interoperability_report.py --publisher $publisher_exe --subscriber $subscriber_exe --output-name $output_file $extra_args
+        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 2
         # Run TypeId tests
-        python3 interoperability_report.py --publisher $publisher_exe --subscriber $subscriber_exe --output-name $typeid_output_file --enable-typeid-tests
+        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $typeid_output_file --enable-typeid-tests --type-object-version 2 -x 2
     - name: Download timestamp
       uses: actions/download-artifact@v5
       with:
