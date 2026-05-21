@@ -192,6 +192,8 @@ class JunitData:
     # [subscriber_name, list of test case aggregated data]
     subscriber_product_dict: dict[str,list[JunitTestCaseAggregatedData]] = {}
 
+    is_typeid_only: bool = False
+
     def __init__(self, input: pathlib.Path):
         self.get_info(input)
 
@@ -243,6 +245,11 @@ class JunitData:
         """
         # get the DOM of the XML
         xml = junitparser.JUnitXml.fromfile(input, parse_func=self.xml_parser)
+
+        # Detect if all test cases are typeid tests
+        all_cases = [case for suite in iter(xml) for case in iter(suite)]
+        if all_cases and all('typeid' in case.name for case in all_cases):
+            self.is_typeid_only = True
 
         # for every test suite in the XML
         for suite in list(iter(xml)):
@@ -396,7 +403,8 @@ class XlsxReport:
         self.__data = data
         self.add_formats()
         self.create_summary_worksheet()
-        self.create_description_worksheet()
+        if not data.is_typeid_only:
+            self.create_description_worksheet()
         self.add_data_test_worksheet()
         self.workbook.close()
 
@@ -886,9 +894,12 @@ class XlsxReport:
 
         # Add title
         dir_name = pathlib.Path(__file__).resolve().parent.name
-        report_title = ('Xtypes Interoperability tests'
-                        if dir_name == 'dds-xtypes'
-                        else 'DDS Interoperability tests')
+        if self.__data.is_typeid_only:
+            report_title = 'Xtypes Interoperability tests - TypeId'
+        elif dir_name == 'dds-xtypes':
+            report_title = 'Xtypes Interoperability tests'
+        else:
+            report_title = 'DDS Interoperability tests'
         worksheet.write(
             current_row, starting_column,
             report_title, self.__formats['title'])
@@ -1000,7 +1011,8 @@ class XlsxReport:
             obj = getattr(test_suite, test_dict)
             if isinstance(obj, dict) and test_dict != '__builtins__':
                 for test_name in obj.keys():
-                    worksheet.write(current_row, col, test_name, self.__formats['bold'])
+                    full_name = f'{test_dict}_{test_name}'
+                    worksheet.write(current_row, col, full_name, self.__formats['bold'])
                     current_row += 1
 
     def add_title_description_worksheet(self,

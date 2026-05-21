@@ -830,12 +830,12 @@ class Arguments:
                 'This option is not supported with --test. (Default: None)')
 
         out_opts = parser.add_argument_group(title='output options')
-        out_opts.add_argument('--disable-typeid-tests',
+        out_opts.add_argument('--enable-typeid-tests',
             default=False,
             required=False,
             action='store_true',
-            help='Skip the TypeIdentifier comparison tests and do not '
-                'add them to the report. (Default: False).')
+            help='Run the TypeIdentifier comparison tests and add '
+                'them to the report. (Default: False).')
         out_opts.add_argument('-o', '--output-name',
             required=False,
             metavar='filename',
@@ -895,7 +895,7 @@ def main():
         'test_cases_disabled': args.disable_test,
         'data_representation': args.data_representation,
         'type_object_version': args.type_object_version,
-        'disable_typeid_tests': args.disable_typeid_tests,
+        'enable_typeid_tests': args.enable_typeid_tests,
     }
 
     # The executables's names are supposed to follow the pattern:
@@ -942,111 +942,7 @@ def main():
 
     t_suite_module = importlib.import_module(options['test_suite'])
 
-    # check that the test_cases selected or disabled are in the test_suite and
-    # exit the application if they are not.
-    test_cases_in_test_suite = False
-    disabled_cases_in_test_suite = False
-    for test_suite_name, t_suite_dict in inspect.getmembers(t_suite_module):
-        if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
-            if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
-                # check that the test_cases selected are in the test_suite and
-                # exit the application if they are not.
-                if are_tests_in_test_suite(
-                        t_suite_dict,
-                        test_suite_name,
-                        options['test_cases'],
-                        options['verbosity']):
-                    test_cases_in_test_suite = True
-                if are_tests_in_test_suite(
-                        t_suite_dict,
-                        test_suite_name,
-                        options['test_cases_disabled'],
-                        options['verbosity']):
-                    disabled_cases_in_test_suite = True
-    if not test_cases_in_test_suite:
-        raise RuntimeError('Test cases to proceed not found in test suite.')
-    if not disabled_cases_in_test_suite:
-        raise RuntimeError('Disabled test cases not found in test suite.')
-
-    for test_suite_name, t_suite_dict in inspect.getmembers(t_suite_module):
-        # getmembers returns all the members in the t_suite_module.
-        # Then, 'type(t_suite) is dict' takes all the members that
-        # are a dictionary. The only one that is not needed (it is not
-        # a test_suite) is __builtins__, and it is skipped.
-        if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
-            for test_case_name, test_case_parameters in t_suite_dict.items():
-                # TestCase is a class from junitparser whose attributes
-                # are: name and result (OK, Failure, Error or Skipped).
-
-                if options['test_cases_disabled'] is not None \
-                        and test_case_name in options['test_cases_disabled']:
-                    # if there are test cases disabled and the script is
-                    # processing one of them, continue
-                    print(f'Test Case {test_case_name} disabled.')
-                    continue
-
-                elif options['test_cases'] is not None \
-                        and test_case_name not in options['test_cases']:
-                    # if only specific test cases are enabled and the script
-                    # is not processing one of them, continue
-                    continue
-                else:
-                    # if the test case is processed
-
-                    # check if the test is supported or not before running it
-                    test_id = f'{test_suite_name}_{test_case_name}'
-                    is_pub_unsupported = test_id in pub_not_supported
-                    is_sub_unsupported = test_id in sub_not_supported
-                    if is_pub_unsupported or is_sub_unsupported:
-                        case = build_unsupported_test_case(
-                            test_id, test_case_parameters,
-                            is_pub_unsupported, is_sub_unsupported)
-                        suite.add_testcase(case)
-                        continue
-
-                    parameters = test_case_parameters['apps']
-                    if 'common_args' in test_case_parameters:
-                        common_args = test_case_parameters['common_args']
-                        # Add the common_args to all elements in parameters
-                        parameters = [s + f' {common_args[0]}' for s in parameters]
-
-                    # check parameters start with pub-exe or sub-exe and they
-                    # are creating publisher/subscriber apps accordingly
-                    parameters = check_pub_sub_app_params(parameters)
-
-                    expected_codes = test_case_parameters['expected_codes']
-                    if ('check_function' in test_case_parameters):
-                        if callable(test_case_parameters['check_function']):
-                            check_function = test_case_parameters['check_function']
-                        else:
-                            raise RuntimeError('Cannot process function of '
-                                f'test case: {test_case_name}')
-                    else:
-                        check_function = no_check
-
-                    assert(len(parameters) == len(expected_codes))
-
-                    for i, element in enumerate(parameters):
-                        if not '-x ' in element and options['data_representation'] is not None:
-                            parameters[i] += f' -x {options["data_representation"]}'
-                        if not '--type-object-version ' in element and options['type_object_version'] is not None:
-                            parameters[i] += f' --type-object-version {options["type_object_version"]}'
-
-                    case = junitparser.TestCase(f'{test_suite_name}_{test_case_name}')
-                    now_test_case = datetime.now()
-                    log_message(f'Running test: {test_case_name}', options['verbosity'])
-                    run_test(name_executable_pub=options['publisher'],
-                            name_executable_sub=options['subscriber'],
-                            test_case=case,
-                            parameters=parameters,
-                            expected_codes=expected_codes,
-                            verbosity=options['verbosity'],
-                            timeout=timeout,
-                            check_function=check_function)
-                    case.time = (datetime.now() - now_test_case).total_seconds()
-                    suite.add_testcase(case)
-
-    if not options['disable_typeid_tests']:
+    if options['enable_typeid_tests']:
         publisher_type_ids = print_ids.get_type_ids(
                 exe=options['publisher'],
                 test_suite=options['test_suite'],
@@ -1058,6 +954,111 @@ def main():
                 type_object_version=options['type_object_version'])
 
         add_type_id_results_to_suite(suite, publisher_type_ids, subscriber_type_ids)
+
+    else:
+        # check that the test_cases selected or disabled are in the test_suite
+        # and exit the application if they are not.
+        test_cases_in_test_suite = False
+        disabled_cases_in_test_suite = False
+        for test_suite_name, t_suite_dict in inspect.getmembers(t_suite_module):
+            if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
+                if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
+                    # check that the test_cases selected are in the test_suite
+                    # and exit the application if they are not.
+                    if are_tests_in_test_suite(
+                            t_suite_dict,
+                            test_suite_name,
+                            options['test_cases'],
+                            options['verbosity']):
+                        test_cases_in_test_suite = True
+                    if are_tests_in_test_suite(
+                            t_suite_dict,
+                            test_suite_name,
+                            options['test_cases_disabled'],
+                            options['verbosity']):
+                        disabled_cases_in_test_suite = True
+        if not test_cases_in_test_suite:
+            raise RuntimeError('Test cases to proceed not found in test suite.')
+        if not disabled_cases_in_test_suite:
+            raise RuntimeError('Disabled test cases not found in test suite.')
+
+        for test_suite_name, t_suite_dict in inspect.getmembers(t_suite_module):
+            # getmembers returns all the members in the t_suite_module.
+            # Then, 'type(t_suite) is dict' takes all the members that
+            # are a dictionary. The only one that is not needed (it is not
+            # a test_suite) is __builtins__, and it is skipped.
+            if type(t_suite_dict) is dict and test_suite_name != '__builtins__':
+                for test_case_name, test_case_parameters in t_suite_dict.items():
+                    # TestCase is a class from junitparser whose attributes
+                    # are: name and result (OK, Failure, Error or Skipped).
+
+                    if options['test_cases_disabled'] is not None \
+                            and test_case_name in options['test_cases_disabled']:
+                        # if there are test cases disabled and the script is
+                        # processing one of them, continue
+                        print(f'Test Case {test_case_name} disabled.')
+                        continue
+
+                    elif options['test_cases'] is not None \
+                            and test_case_name not in options['test_cases']:
+                        # if only specific test cases are enabled and the script
+                        # is not processing one of them, continue
+                        continue
+                    else:
+                        # if the test case is processed
+
+                        # check if the test is supported or not before running it
+                        test_id = f'{test_suite_name}_{test_case_name}'
+                        is_pub_unsupported = test_id in pub_not_supported
+                        is_sub_unsupported = test_id in sub_not_supported
+                        if is_pub_unsupported or is_sub_unsupported:
+                            case = build_unsupported_test_case(
+                                test_id, test_case_parameters,
+                                is_pub_unsupported, is_sub_unsupported)
+                            suite.add_testcase(case)
+                            continue
+
+                        parameters = test_case_parameters['apps']
+                        if 'common_args' in test_case_parameters:
+                            common_args = test_case_parameters['common_args']
+                            # Add the common_args to all elements in parameters
+                            parameters = [s + f' {common_args[0]}' for s in parameters]
+
+                        # check parameters start with pub-exe or sub-exe and they
+                        # are creating publisher/subscriber apps accordingly
+                        parameters = check_pub_sub_app_params(parameters)
+
+                        expected_codes = test_case_parameters['expected_codes']
+                        if ('check_function' in test_case_parameters):
+                            if callable(test_case_parameters['check_function']):
+                                check_function = test_case_parameters['check_function']
+                            else:
+                                raise RuntimeError('Cannot process function of '
+                                    f'test case: {test_case_name}')
+                        else:
+                            check_function = no_check
+
+                        assert(len(parameters) == len(expected_codes))
+
+                        for i, element in enumerate(parameters):
+                            if not '-x ' in element and options['data_representation'] is not None:
+                                parameters[i] += f' -x {options["data_representation"]}'
+                            if not '--type-object-version ' in element and options['type_object_version'] is not None:
+                                parameters[i] += f' --type-object-version {options["type_object_version"]}'
+
+                        case = junitparser.TestCase(f'{test_suite_name}_{test_case_name}')
+                        now_test_case = datetime.now()
+                        log_message(f'Running test: {test_case_name}', options['verbosity'])
+                        run_test(name_executable_pub=options['publisher'],
+                                name_executable_sub=options['subscriber'],
+                                test_case=case,
+                                parameters=parameters,
+                                expected_codes=expected_codes,
+                                verbosity=options['verbosity'],
+                                timeout=timeout,
+                                check_function=check_function)
+                        case.time = (datetime.now() - now_test_case).total_seconds()
+                        suite.add_testcase(case)
 
     suite.time = (datetime.now() - now).total_seconds()
     xml.add_testsuite(suite)
