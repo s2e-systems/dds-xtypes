@@ -1,0 +1,142 @@
+name: 1 - Run Interoperability Tests
+run-name: Run Interoperability Tests
+on:
+  workflow_dispatch:
+    inputs:
+      publishers:
+        description: Publishers to use
+        type: string
+        default: '["connext_dds","toc_coredx_dds", "eclipse_cyclone"]'
+      subscribers:
+        description: Subscribers to use
+        type: string
+        default: '["connext_dds","toc_coredx_dds", "eclipse_cyclone"]'
+jobs:
+  generate_timestamp:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate timestamp file
+      run: date '+%Y-%m-%d-%H_%M_%S' > timestamp
+    - name: Upload timestamp file
+      uses: actions/upload-artifact@v4
+      with:
+        name: timestamp
+        path: |
+          ./timestamp
+
+  run_tests:
+    runs-on: ubuntu-latest
+    needs: generate_timestamp
+    strategy:
+      matrix:
+        publisher: ${{ fromJson(github.event.inputs.publishers) }}
+        subscriber: ${{ fromJson(github.event.inputs.subscribers) }}
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.4'
+    - name: Download shape_main executables
+      uses: robinraju/release-downloader@v1.10
+      with:
+        latest: true
+        fileName: "*"
+        out-file-path: zipped_executables
+    - name: Unzip executables
+      run: unzip 'zipped_executables/*.zip' -d executables
+    - name: Install Python requirements
+      run: pip install --requirement requirements.txt
+    - name: Run Interoperability script
+      timeout-minutes: 120
+      continue-on-error: true
+      run: |
+        publisher_exe=executables/${{ matrix.publisher }}*shape_main_linux
+        subscriber_exe=executables/${{ matrix.subscriber }}*shape_main_linux
+        output_file=junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+        typeid_output_file=junit_typeid_report-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+        extra_args=""
+        # Check if publisher executable exists
+        if ! ls $publisher_exe 1> /dev/null 2>&1; then
+          echo "ERROR: Publisher executable not found: $publisher_exe"
+          exit 1
+        fi
+        # Check if subscriber executable exists
+        if ! ls $subscriber_exe 1> /dev/null 2>&1; then
+          echo "ERROR: Subscriber executable not found: $subscriber_exe"
+          exit 1
+        fi
+        if [[ "${subscriber_exe,,}" == *opendds* && "${publisher_exe,,}" == *connext_dds* ]]; then
+          extra_args="--periodic-announcement 5000"
+        fi
+        # Run normal interoperability tests
+        python3 interoperability_report.py --publisher $publisher_exe --subscriber $subscriber_exe --output-name $output_file $extra_args
+        # Run TypeId tests
+        python3 interoperability_report.py --publisher $publisher_exe --subscriber $subscriber_exe --output-name $typeid_output_file --enable-typeid-tests
+    - name: Download timestamp
+      uses: actions/download-artifact@v4
+      with:
+        name: timestamp
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      with:
+        name: junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}
+        path: |
+          ./junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+          ./junit_typeid_report-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+          ./timestamp
+
+  generate_report:
+    runs-on: ubuntu-latest
+    needs: run_tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: junit_report-*
+          merge-multiple: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.4'
+      - name: Install Python requirements
+        run: pip install --requirement requirements.txt
+      - name: Merge normal test reports
+        run: junitparser merge junit_report-*.xml junit_interoperability_report.xml
+      - name: Merge TypeId test reports
+        run: junitparser merge junit_typeid_report-*.xml junit_typeid_interoperability_report.xml
+      - name: Generate xlsx report (normal)
+        run: python3 generate_xlsx_report.py --input junit_interoperability_report.xml --output interoperability_report.xlsx
+      - name: Generate xlsx report (TypeId)
+        run: python3 generate_xlsx_report.py --input junit_typeid_interoperability_report.xml --output typeid_interoperability_report.xlsx
+      - name: Generate HTML report (normal)
+        uses: AutoModality/action-xunit-viewer@v1
+        with:
+          results: ./junit_interoperability_report.xml
+          output: ./interoperability_report.html
+          fail: false
+      - name: Generate HTML report (TypeId)
+        uses: AutoModality/action-xunit-viewer@v1
+        with:
+          results: ./junit_typeid_interoperability_report.xml
+          output: ./typeid_interoperability_report.html
+          fail: false
+      - name: Download timestamp
+        uses: actions/download-artifact@v4
+        with:
+          name: timestamp
+      - name: Attach the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interoperability_report_complete
+          path: |
+            ./interoperability_report.html
+            ./junit_interoperability_report.xml
+            ./interoperability_report.xlsx
+            ./typeid_interoperability_report.html
+            ./junit_typeid_interoperability_report.xml
+            ./typeid_interoperability_report.xlsx
+            ./timestamp
