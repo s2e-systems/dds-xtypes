@@ -365,7 +365,8 @@ def build_unsupported_test_case(
         test_id: str,
         test_case_parameters: dict,
         is_pub_unsupported: bool,
-        is_sub_unsupported: bool) -> junitparser.TestCase:
+        is_sub_unsupported: bool,
+        parameters: "list[str]") -> junitparser.TestCase:
     """ Build a junitparser.TestCase for a test that is not supported by one
         or both sides, without running the actual test application.
 
@@ -378,20 +379,16 @@ def build_unsupported_test_case(
         test_case_parameters <<in>>: the test parameters dict from the test suite.
         is_pub_unsupported <<in>>: True when the Publisher side is unsupported.
         is_sub_unsupported <<in>>: True when the Subscriber side is unsupported.
+        parameters <<in>>: list of fully-built test application parameters.
 
         Returns a junitparser.TestCase with a Failure result.
     """
     expected_codes = test_case_parameters['expected_codes']
-    parameters_raw = test_case_parameters['apps']
-    if 'common_args' in test_case_parameters:
-        parameters_raw = [s + f' {test_case_parameters["common_args"][0]}'
-                          for s in parameters_raw]
-    parameters_raw = check_pub_sub_app_params(parameters_raw)
 
     # build entity labels (Publisher_N / Subscriber_N)
     entity_labels = []
     pub_idx = sub_idx = 0
-    for param in parameters_raw:
+    for param in parameters:
         if '-P ' in param or param.endswith('-P'):
             pub_idx += 1
             entity_labels.append(f'Publisher_{pub_idx}')
@@ -442,6 +439,11 @@ def build_unsupported_test_case(
 
     case = junitparser.TestCase(test_id)
     case.result = [junitparser.Failure(message)]
+
+    # create an attribute for each entity that will contain their parameters
+    for i in range(0, len(parameters)):
+        junitparser.TestCase.i = junitparser.Attr(entity_labels[i])
+        case.i = parameters[i]
 
     for i, label in enumerate(entity_labels):
         is_entity_pub = 'Publisher' in label
@@ -1007,17 +1009,6 @@ def main():
                     else:
                         # if the test case is processed
 
-                        # check if the test is supported or not before running it
-                        test_id = f'{test_suite_name}_{test_case_name}'
-                        is_pub_unsupported = test_id in pub_not_supported
-                        is_sub_unsupported = test_id in sub_not_supported
-                        if is_pub_unsupported or is_sub_unsupported:
-                            case = build_unsupported_test_case(
-                                test_id, test_case_parameters,
-                                is_pub_unsupported, is_sub_unsupported)
-                            suite.add_testcase(case)
-                            continue
-
                         parameters = test_case_parameters['apps']
                         if 'common_args' in test_case_parameters:
                             common_args = test_case_parameters['common_args']
@@ -1027,6 +1018,24 @@ def main():
                         # check parameters start with pub-exe or sub-exe and they
                         # are creating publisher/subscriber apps accordingly
                         parameters = check_pub_sub_app_params(parameters)
+
+                        for i, element in enumerate(parameters):
+                            if not '-x ' in element and options['data_representation'] is not None:
+                                parameters[i] += f' -x {options["data_representation"]}'
+                            if not '--type-object-version ' in element and options['type_object_version'] is not None:
+                                parameters[i] += f' --type-object-version {options["type_object_version"]}'
+
+                        # check if the test is supported or not before running it
+                        test_id = f'{test_suite_name}_{test_case_name}'
+                        is_pub_unsupported = test_id in pub_not_supported
+                        is_sub_unsupported = test_id in sub_not_supported
+                        if is_pub_unsupported or is_sub_unsupported:
+                            case = build_unsupported_test_case(
+                                test_id, test_case_parameters,
+                                is_pub_unsupported, is_sub_unsupported,
+                                parameters)
+                            suite.add_testcase(case)
+                            continue
 
                         expected_codes = test_case_parameters['expected_codes']
                         if ('check_function' in test_case_parameters):
@@ -1039,12 +1048,6 @@ def main():
                             check_function = no_check
 
                         assert(len(parameters) == len(expected_codes))
-
-                        for i, element in enumerate(parameters):
-                            if not '-x ' in element and options['data_representation'] is not None:
-                                parameters[i] += f' -x {options["data_representation"]}'
-                            if not '--type-object-version ' in element and options['type_object_version'] is not None:
-                                parameters[i] += f' --type-object-version {options["type_object_version"]}'
 
                         case = junitparser.TestCase(f'{test_suite_name}_{test_case_name}')
                         now_test_case = datetime.now()

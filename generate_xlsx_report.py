@@ -193,6 +193,8 @@ class JunitData:
     subscriber_product_dict: dict[str,list[JunitTestCaseAggregatedData]] = {}
 
     is_typeid_only: bool = False
+    xcdr_version: str = None
+    type_object_version: str = None
 
     def __init__(self, input: pathlib.Path):
         self.get_info(input)
@@ -250,6 +252,23 @@ class JunitData:
         all_cases = [case for suite in iter(xml) for case in iter(suite)]
         if all_cases and all('typeid' in case.name for case in all_cases):
             self.is_typeid_only = True
+
+        # Extract XCDR and TypeObject version from test case properties
+        for case in all_cases:
+            attribs = case._elem.attrib
+            for attr_name, attr_value in attribs.items():
+                if attr_name.startswith(('Publisher_', 'Subscriber_')):
+                    xcdr_match = re.search(r'-x\s+(\d+)', attr_value)
+                    if xcdr_match and self.xcdr_version is None:
+                        self.xcdr_version = xcdr_match.group(1)
+                    to_match = re.search(
+                        r'--type-object-version\s+(\d+)', attr_value)
+                    if to_match and self.type_object_version is None:
+                        self.type_object_version = to_match.group(1)
+                if self.xcdr_version and self.type_object_version:
+                    break
+            if self.xcdr_version and self.type_object_version:
+                break
 
         # for every test suite in the XML
         for suite in list(iter(xml)):
@@ -423,7 +442,7 @@ class XlsxReport:
         # rows.
         # The tables leave the first column (value 0) as gap
         self.add_data_summary_worksheet(
-            starting_row=13,
+            starting_row=14,
             starting_column=1,
             worksheet=summary_worksheet)
         # After having all data that may have an unknown length, we call
@@ -933,6 +952,18 @@ class XlsxReport:
         current_row += 1
         worksheet.write(current_row, starting_column + 1,'Documentation')
         worksheet.write(current_row, starting_column + 2, self.REPO_DOC)
+
+        # Add TypeObject and XCDR version
+        if self.__data.type_object_version or self.__data.xcdr_version:
+            current_row += 1
+            parts = []
+            if self.__data.type_object_version:
+                parts.append(f'TypeObjectV{self.__data.type_object_version}')
+            if self.__data.xcdr_version:
+                parts.append(f'XCDR{self.__data.xcdr_version}')
+            worksheet.write(current_row, starting_column + 1, 'Configuration')
+            worksheet.write(current_row, starting_column + 2,
+                            ' - '.join(parts))
 
         # Add number of tests
 
