@@ -1030,6 +1030,7 @@ def main():
                         is_pub_unsupported = test_id in pub_not_supported
                         is_sub_unsupported = test_id in sub_not_supported
                         if is_pub_unsupported or is_sub_unsupported:
+                            print(f'{test_id} : UNSUPPORTED')
                             case = build_unsupported_test_case(
                                 test_id, test_case_parameters,
                                 is_pub_unsupported, is_sub_unsupported,
