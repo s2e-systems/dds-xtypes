@@ -52,17 +52,19 @@ jobs:
       timeout-minutes: 120
       continue-on-error: true
       run: |
-        publisher_exe=executables/${{ matrix.publisher }}*test_main_linux
-        subscriber_exe=executables/${{ matrix.subscriber }}*test_main_linux
+        publisher_exe=$(ls executables/${{ matrix.publisher }}*test_main_linux)
+        subscriber_exe=$(ls executables/${{ matrix.subscriber }}*test_main_linux)
+        pub_name=$(basename $publisher_exe)
+        sub_name=$(basename $subscriber_exe)
         extra_args=""
         # Check if publisher executable exists
-        if ! ls $publisher_exe 1> /dev/null 2>&1; then
-          echo "ERROR: Publisher executable not found: $publisher_exe"
+        if [[ -z "$publisher_exe" ]]; then
+          echo "ERROR: Publisher executable not found: executables/${{ matrix.publisher }}*test_main_linux"
           exit 1
         fi
         # Check if subscriber executable exists
-        if ! ls $subscriber_exe 1> /dev/null 2>&1; then
-          echo "ERROR: Subscriber executable not found: $subscriber_exe"
+        if [[ -z "$subscriber_exe" ]]; then
+          echo "ERROR: Subscriber executable not found: executables/${{ matrix.subscriber }}*test_main_linux"
           exit 1
         fi
         if [[ "${subscriber_exe,,}" == *opendds* && "${publisher_exe,,}" == *connext_dds* ]]; then
@@ -70,27 +72,27 @@ jobs:
         fi
         # Run interoperability tests (xcdr1, type_object_version 1)
         output_file=junit_report_xcdr1_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$publisher_exe sub=$subscriber_exe xcdr=1 type_object_version=1 ==="
+        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=1 type_object_version=1 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 1 -x 1
         # Run interoperability tests (xcdr1, type_object_version 2)
         output_file=junit_report_xcdr1_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$publisher_exe sub=$subscriber_exe xcdr=1 type_object_version=2 ==="
+        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=1 type_object_version=2 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 1
         # Run interoperability tests (xcdr2, type_object_version 1)
         output_file=junit_report_xcdr2_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$publisher_exe sub=$subscriber_exe xcdr=2 type_object_version=1 ==="
+        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=2 type_object_version=1 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 1 -x 2
         # Run interoperability tests (xcdr2, type_object_version 2)
         output_file=junit_report_xcdr2_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$publisher_exe sub=$subscriber_exe xcdr=2 type_object_version=2 ==="
+        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=2 type_object_version=2 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 2
         # Run TypeId tests (type_object_version 1)
         output_file=junit_typeid_report_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running TypeId: pub=$publisher_exe sub=$subscriber_exe type_object_version=1 ==="
+        echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=1 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 1
         # Run TypeId tests (type_object_version 2)
         output_file=junit_typeid_report_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running TypeId: pub=$publisher_exe sub=$subscriber_exe type_object_version=2 ==="
+        echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=2 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 2
     - name: Download timestamp
       uses: actions/download-artifact@v5
