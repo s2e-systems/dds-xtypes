@@ -7,7 +7,7 @@
 #
 #################################################################
 
-from rtps_test_utilities import ReturnCode
+from interoperability_test_utilities import ReturnCode
 import re
 import pexpect
 import queue

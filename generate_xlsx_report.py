@@ -4,7 +4,7 @@
 # subject to the OMG-DDS INTEROPERABILITY TESTING LICENSE found
 # at the following URL:
 #
-# https://github.com/omg-dds/dds-rtps/blob/master/LICENSE.md
+# https://github.com/omg-dds/dds-xtypes/blob/master/LICENSE.md
 #
 #################################################################
 
@@ -17,8 +17,24 @@ import sys
 import os
 import re
 import datetime
-from rtps_test_utilities import log_message
 import test_suite
+from enum import Enum
+
+class TestStatus(Enum):
+    """
+    Enumeration of the test status.
+    PASSED: The test has passed
+    FAILED: The test has failed
+    PUB_UNSUPPORTED: The test is unsupported for the Publisher
+    SUB_UNSUPPORTED: The test is unsupported for the Subscriber
+    PUB_SUB_UNSUPPORTED: The test is unsupported for both Publisher and Subscriber
+    """
+    PASSED = 1
+    FAILED = 2
+    PUB_UNSUPPORTED = 3
+    SUB_UNSUPPORTED = 4
+    PUB_SUB_UNSUPPORTED = 5
+    NOT_EQUAL = 6
 
 class XlxsReportArgumentParser:
     """Class that parse the arguments of the application."""
@@ -63,6 +79,8 @@ class ProductUtils:
             return 'eProsima'
         elif 'dust' in product.lower():
             return 'S2E Software Systems'
+        elif 'hdds' in product.lower():
+            return 'Naskel'
         elif 'cyclone' in product.lower():
             return 'Eclipse Foundation'
         else:
@@ -72,6 +90,8 @@ class ProductUtils:
     def get_product_name(product:str) -> str:
         """Returns a beautified product name and version"""
         # set the beautified name and version
+        if 'connext' in product.lower() and 'micro' in product.lower():
+            return 'Connext DDS Micro ' + re.search(r'([\d.]+)', product).group(1)
         if 'connext' in product.lower():
             return 'Connext DDS ' + re.search(r'([\d.]+)', product).group(1)
         elif 'opendds' in product.lower():
@@ -84,22 +104,25 @@ class ProductUtils:
             return 'FastDDS ' + re.search(r'([\d.]+)', product).group(1)
         elif 'dust_dds' in product.lower():
             return 'Dust DDS ' + re.search(r'([\d.]+)', product).group(1)
+        elif 'hdds' in product.lower():
+            return 'HDDS ' + re.search(r'([\d.]+)', product).group(1)
         elif 'cyclone' in product.lower():
-            return 'Cyclone DDS'
+            return 'Cyclone DDS ' + re.search(r'([\d.]+)', product).group(1)
         else:
             raise RuntimeError('Impossible to get product name: ' + product)
 
 
 class JunitAggregatedData:
     """
-    Class that contains the JUnit aggregated data as a tuple of 2 integers
-    [tests_passed, total_tests]. This identifies one cell in the summary
-    table that shows the product and the amount of tests passed and total.
+    Class that contains the JUnit aggregated data as a tuple of 3 integers
+    [tests_passed, total_tests, tests_unsupported]. This identifies one cell in
+    the summary table that shows the product and the amount of tests passed,
+    total and unsupported.
     """
-    data: tuple[int,int] # [tests_passed, total_tests]
+    data: tuple[int,int, int] # [tests_passed, total_tests, tests_unsupported]
 
-    def __init__(self, passed_tests: int, total_tests: int) -> None:
-        self.data = [passed_tests, total_tests]
+    def __init__(self, passed_tests: int, total_tests: int, unsupported_tests: int) -> None:
+        self.data = [passed_tests, total_tests, unsupported_tests]
 
     def get_passed_tests(self):
         return self.data[0]
@@ -107,8 +130,14 @@ class JunitAggregatedData:
     def get_total_tests(self):
         return self.data[1]
 
+    def get_unsupported_tests(self):
+        return self.data[2]
+
+    def get_supported_tests(self):
+        return self.data[1] - self.data[2]
+
     def __str__(self) -> str:
-        return f'({self.data[0]}, {self.data[1]})'
+        return f'({self.data[0]}, {self.data[1]}, {self.data[2]})'
 
 class JunitTestCaseAggregatedData:
     """
@@ -117,14 +146,13 @@ class JunitTestCaseAggregatedData:
     Publisher or Subscriber) and with all other products (as Subscribers or
     Publishers, the opposite).
     This tuple is composed by 2 strings that identifies the other product
-    (Publisher or Subscriber), the test name and whether the test was
-    successful or not.
+    (Publisher or Subscriber), the test name and the status of the test.
     """
-    # [publisher or subscriber name, test_name, passed_tests]
-    data: tuple[str,str,bool] = None
+    # [publisher or subscriber name, test_name, status]
+    data: tuple[str,str,TestStatus] = None
 
-    def __init__(self, product: str, test_name: str, passed: bool) -> None:
-        self.data = (product, test_name, passed)
+    def __init__(self, product: str, test_name: str, status: TestStatus) -> None:
+        self.data = (product, test_name, status)
 
     def get_product_name(self):
         return self.data[0]
@@ -132,7 +160,7 @@ class JunitTestCaseAggregatedData:
     def get_test_name(self):
         return self.data[1]
 
-    def get_passed(self):
+    def get_status(self):
         return self.data[2]
 
     def __str__(self) -> str:
@@ -164,12 +192,15 @@ class JunitData:
     # [subscriber_name, list of test case aggregated data]
     subscriber_product_dict: dict[str,list[JunitTestCaseAggregatedData]] = {}
 
+    is_typeid_only: bool = False
+
     def __init__(self, input: pathlib.Path):
         self.get_info(input)
 
     @staticmethod
     def xml_parser(file):
         """Function to parse the XML file"""
+
         parser = lxml.etree.XMLParser(huge_tree=True)
         return lxml.etree.parse(file, parser)
 
@@ -186,6 +217,7 @@ class JunitData:
             updated_data = JunitAggregatedData(
                 dictionary[key].get_passed_tests() + value.get_passed_tests(),
                 dictionary[key].get_total_tests() + value.get_total_tests(),
+                dictionary[key].get_unsupported_tests() + value.get_unsupported_tests()
             )
             dictionary[key] = updated_data
         else:
@@ -214,6 +246,11 @@ class JunitData:
         # get the DOM of the XML
         xml = junitparser.JUnitXml.fromfile(input, parse_func=self.xml_parser)
 
+        # Detect if all test cases are typeid tests
+        all_cases = [case for suite in iter(xml) for case in iter(suite)]
+        if all_cases and all('typeid' in case.name for case in all_cases):
+            self.is_typeid_only = True
+
         # for every test suite in the XML
         for suite in list(iter(xml)):
             # get beautified publisher and subscriber names from the test suite
@@ -222,48 +259,50 @@ class JunitData:
             publisher_name = ProductUtils.get_product_name(product_names.group(1))
             subscriber_name = ProductUtils.get_product_name(product_names.group(2))
 
-            # get the value of the passed_tests and total_tests as a
-            # JunitAggregatedData
-            element = JunitAggregatedData(
-                suite.tests - suite.failures - suite.skipped - suite.errors,
-                suite.tests
-            )
-
-            # update the information of the product in the summary_dict with
-            # the information of the publisher and the subscriber
-            self.update_value_aggregated_data_dict(
-                self.summary_dict, publisher_name, element)
-            # do not add duplicated data if the publisher and subscriber names
-            # are the same
-            if publisher_name != subscriber_name:
-                self.update_value_aggregated_data_dict(
-                    self.summary_dict, subscriber_name, element)
-
-            # Get table with the summary of the test passed/total_tests for
-            # every product as publisher and as subscriber
-            product_dict_key = (publisher_name, subscriber_name)
-            product_test_data = JunitAggregatedData(
-                suite.tests - suite.failures - suite.skipped - suite.errors,
-                suite.tests)
-            self.update_value_aggregated_data_dict(
-                self.product_summary_dict,
-                product_dict_key,
-                product_test_data)
-
             # for each test case in the test suite, fill out the dictionaries
             # that contains information about the product as publisher and
             # subscriber
+            unsupported_tests_count = 0
             for case in list(iter(suite)):
-                # test_name = re.search(r'((?:Test_)[\S]+_\d+)', case.name).group(1)
+                is_pub_unsupported = False
+                is_sub_unsupported = False
+                status = None
                 test_name = case.name
+
+                # count number of unsupported tests for the summary
+                # result array is not empty and the message contains 'UNSUPPORTED_FEATURE'
+                if case.result and len(case.result) > 0:
+                    if 'PUB_UNSUPPORTED_FEATURE' in case.result[0].message.upper():
+                        is_pub_unsupported = True
+                    if 'SUB_UNSUPPORTED_FEATURE' in case.result[0].message.upper():
+                        is_sub_unsupported = True
+
+                if is_pub_unsupported or is_sub_unsupported:
+                    unsupported_tests_count += 1
+
+                # Get test status
+                if case.is_passed:
+                    status = TestStatus.PASSED
+                elif is_pub_unsupported and is_sub_unsupported:
+                    status = TestStatus.PUB_SUB_UNSUPPORTED
+                elif is_pub_unsupported:
+                    status = TestStatus.PUB_UNSUPPORTED
+                elif is_sub_unsupported:
+                    status = TestStatus.SUB_UNSUPPORTED
+                elif "typeid" in case.name:
+                    # different typeids in DDS does not mean an error
+                    status = TestStatus.NOT_EQUAL
+                else:
+                    status = TestStatus.FAILED
+
 
                 # update the value of the publisher_name as publisher with
                 # all products as subscribers.
-                # the tuple is (subscriber_name, test_name, is_passed)
+                # the tuple is (subscriber_name, test_name, status)
                 publisher_test_result = JunitTestCaseAggregatedData(
                     product=subscriber_name,
                     test_name=test_name,
-                    passed=case.is_passed
+                    status=status
                 )
 
                 # add the resulting tuple to the publisher dictionary, the key
@@ -277,11 +316,11 @@ class JunitData:
 
                 # update the value of the subscriber_name as subscriber with
                 # all products as publishers.
-                # the tuple is (publisher_name, test_name, is_passed)
+                # the tuple is (publisher_name, test_name, status)
                 subscriber_test_result = JunitTestCaseAggregatedData(
                     product=publisher_name,
                     test_name=test_name,
-                    passed=case.is_passed
+                    status=status
                 )
 
                 # add the resulting tuple to the subscriber dictionary, the key
@@ -292,6 +331,37 @@ class JunitData:
                         value=subscriber_test_result,
                         product_dict=self.subscriber_product_dict
                 )
+
+            # get the value of the passed_tests, total_tests and
+            # unsupported_tests as a JunitAggregatedData
+            element = JunitAggregatedData(
+                suite.tests - suite.failures - suite.skipped - suite.errors,
+                suite.tests,
+                unsupported_tests_count
+            )
+
+            # update the information of the product in the summary_dict with
+            # the information of the publisher and the subscriber
+            self.update_value_aggregated_data_dict(
+                self.summary_dict, publisher_name, element)
+            # do not add duplicated data if the publisher and subscriber names
+            # are the same
+            if publisher_name != subscriber_name:
+                self.update_value_aggregated_data_dict(
+                    self.summary_dict, subscriber_name, element)
+
+            # Get table with the summary of the test
+            # passed/total_tests/unsupported_tests for every product as
+            # publisher and as subscriber
+            product_dict_key = (publisher_name, subscriber_name)
+            product_test_data = JunitAggregatedData(
+                suite.tests - suite.failures - suite.skipped - suite.errors,
+                suite.tests,
+                unsupported_tests_count)
+            self.update_value_aggregated_data_dict(
+                self.product_summary_dict,
+                product_dict_key,
+                product_test_data)
 
 class ColorUtils:
     """Set specific colors"""
@@ -319,8 +389,8 @@ class XlsxReport:
     workbook: xlsxwriter.Workbook
     __data: JunitData
     __formats: dict = {} # contains the format name and formats objects
-    REPO_LINK = 'https://github.com/omg-dds/dds-rtps'
-    REPO_DOC = 'https://omg-dds.github.io/dds-rtps/'
+    REPO_LINK = 'https://github.com/omg-dds/dds-xtypes'
+    REPO_DOC = 'https://omg-dds.github.io/dds-xtypes/'
 
     def __init__(self, output: pathlib.Path, data: JunitData):
         """
@@ -333,7 +403,8 @@ class XlsxReport:
         self.__data = data
         self.add_formats()
         self.create_summary_worksheet()
-        self.create_description_worksheet()
+        if not data.is_typeid_only:
+            self.create_description_worksheet()
         self.add_data_test_worksheet()
         self.workbook.close()
 
@@ -352,7 +423,7 @@ class XlsxReport:
         # rows.
         # The tables leave the first column (value 0) as gap
         self.add_data_summary_worksheet(
-            starting_row=9,
+            starting_row=13,
             starting_column=1,
             worksheet=summary_worksheet)
         # After having all data that may have an unknown length, we call
@@ -427,7 +498,13 @@ class XlsxReport:
         Return the corresponding color format depending on the ratio of
         passed_tests/total_tests
         """
+        # this might only happen for supported tests when the total supported
+        # scenarios is 0
+        if num_elements == 0:
+            return self.__formats['result_red']
+
         ratio = index / num_elements
+
         if ratio < 0.25:
             return self.__formats['result_red']
         elif ratio < 0.5:
@@ -439,17 +516,20 @@ class XlsxReport:
         else: # ratio == 1
             return self.__formats['result_green']
 
-    def get_format_color_bool(self, passed: bool):
+    def get_format_color_test_status(self, status: TestStatus):
         """
-        Get the corresponding color format depending on 'passed'.
-        Green if passed is True, Red otherwise
+        Get the corresponding color format depending on 'status'.
+        Green if status is PASSED, Red if FAILED, Yellow if UNSUPPORTED
         """
-        if passed:
+        if status == TestStatus.PASSED:
             # Return GREEN
-            return self.get_format_color(1,1)
+            return self.__formats['result_green']
+        elif status == TestStatus.FAILED:
+            # Return RED
+            return self.__formats['result_red']
         else:
-            # Return FALSE
-            return self.get_format_color(0,1)
+            # Return YELLOW
+            return self.__formats['result_yellow']
 
     def add_static_data_test(self,
             worksheet: xlsxwriter.Workbook.worksheet_class,
@@ -609,7 +689,7 @@ class XlsxReport:
                 'Test',
                 self.__formats['bold_w_border'])
 
-        # This column dictionary will keep the colum for the subscriber product
+        # This column dictionary will keep the column for the subscriber product
         column_dict = {}
         row_dict = {}
         # for all elements (test results), add the corresponding value to the
@@ -650,13 +730,28 @@ class XlsxReport:
                             element.get_test_name(),
                             self.__formats['bold_w_border'])
 
-            # set OK or ERROR if the test passed or not
-            str_result = 'OK' if element.get_passed() else 'ERROR'
+            # get status string of the test result
+            if element.get_status() == TestStatus.PASSED:
+                str_result = 'OK'
+            elif element.get_status() == TestStatus.FAILED:
+                str_result = 'ERROR'
+            elif element.get_status() == TestStatus.PUB_UNSUPPORTED:
+                str_result = 'PUB UNSUPPORTED'
+            elif element.get_status() == TestStatus.SUB_UNSUPPORTED:
+                str_result = 'SUB UNSUPPORTED'
+            elif element.get_status() == TestStatus.PUB_SUB_UNSUPPORTED:
+                str_result = 'PUB/SUB UNSUPPORTED'
+            elif element.get_status() == TestStatus.NOT_EQUAL:
+                str_result = 'NOT EQUAL'
+            else:
+                str_result = 'UNKNOWN'
+
+            # write status string to the test result
             worksheet.write(
                     process_row,
                     process_column,
                     str_result,
-                    self.get_format_color_bool(element.get_passed()))
+                    self.get_format_color_test_status(element.get_status()))
         return (current_row, current_column)
 
     def add_data_summary_worksheet(self,
@@ -678,33 +773,64 @@ class XlsxReport:
             'Product', self.__formats['bold_w_border'])
         worksheet.write(
             current_row, current_column + 2,
-            'Test Passed', self.__formats['bold_w_border'])
+            'Single-Product Tests', self.__formats['bold_w_border'])
+        worksheet.write(
+            current_row, current_column + 3,
+            'Cross Product Tests', self.__formats['bold_w_border'])
 
         current_row += 1
 
         # Create table with the total passed_tests/total_tests per product
         for product_name, value in self.__data.summary_dict.items():
+            # company name
             worksheet.write(
                 current_row, current_column,
                 ProductUtils.get_company_name(product_name),
                 self.__formats['bold_w_border'])
+            # product name
             worksheet.write(
                 current_row, current_column + 1,
                 product_name,
                 self.__formats['bold_w_border'])
+
+            # vendor coverage
+
+            # for the vendor coverage, we need to find the right data in the
+            # product_summary_dict, which is the one with the same product as
+            # publisher and subscriber
+            for product_key, product_value in self.__data.product_summary_dict.items():
+                if product_name == product_key[0] and product_name == product_key[1]:
+                    product_coverage_supported_tests = product_value.get_supported_tests()
+                    product_coverage_total_tests = product_value.get_total_tests()
+                    product_coverage_passed_tests = product_value.get_passed_tests()
+
+                    # vendor coverage
+                    worksheet.write(
+                        current_row, current_column + 2,
+                        str(product_coverage_passed_tests) + ' / ' +
+                                str(product_coverage_supported_tests) + ' / ' +
+                                str(product_coverage_total_tests),
+                        self.get_format_color(
+                                product_coverage_passed_tests,
+                                product_coverage_total_tests))
+
+            # total tests
             worksheet.write(
-                current_row, current_column + 2,
+                current_row, current_column + 3,
                 str(value.get_passed_tests()) + ' / ' +
-                str(value.get_total_tests()),
-                self.get_format_color(value.get_passed_tests(),
-                                      value.get_total_tests()))
+                    str(value.get_supported_tests()) + ' / ' +
+                    str(value.get_total_tests()),
+                self.get_format_color(
+                        value.get_passed_tests(), value.get_supported_tests()))
+
             current_row += 1
+
 
         # Add 2 rows of gap for the next table
         current_row += 2
         worksheet.write(
             current_row, current_column,
-            'Publisher/Subscriber', self.__formats['bold_w_border'])
+            'Publisher (row)/Subscriber (column)', self.__formats['bold_w_border'])
 
         # create a dictionary to store the row/column of the product name
         # for example, row_dict['Connext DDS 6.1.2'] = 30 means that the
@@ -718,7 +844,7 @@ class XlsxReport:
 
         # Add the table passed_tests/total_tests with all combinations of product
         # as publishers and as subscribers
-        for (publisher_name, subscriber_name), value in self.__data.product_summary_dict.items():
+        for (publisher_name, subscriber_name), product_value in self.__data.product_summary_dict.items():
             # if the publisher hasn't been already processed yet, determine
             # what is the process_row by selecting the next free row
             # (current_row+1)
@@ -748,9 +874,10 @@ class XlsxReport:
                 process_column = column_dict[subscriber_name]
 
             worksheet.write(process_row, process_column,
-                            str(value.get_passed_tests()) + ' / ' +
-                            str(value.get_total_tests()),
-                            self.get_format_color(value.get_passed_tests(), value.get_total_tests()))
+                    str(product_value.get_passed_tests()) + ' / ' +
+                        str(product_value.get_supported_tests()) + ' / ' +
+                        str(product_value.get_total_tests()),
+                    self.get_format_color(product_value.get_passed_tests(), product_value.get_supported_tests()))
 
     def add_static_data_summary_worksheet(self,
             worksheet: xlsxwriter.Workbook.worksheet_class,
@@ -766,9 +893,16 @@ class XlsxReport:
         current_row = starting_row
 
         # Add title
+        dir_name = pathlib.Path(__file__).resolve().parent.name
+        if self.__data.is_typeid_only:
+            report_title = 'Xtypes Interoperability tests - TypeId'
+        elif dir_name == 'dds-xtypes':
+            report_title = 'Xtypes Interoperability tests'
+        else:
+            report_title = 'DDS Interoperability tests'
         worksheet.write(
             current_row, starting_column,
-            'DDS Interoperability tests', self.__formats['title'])
+            report_title, self.__formats['title'])
 
         # Add Summary literal
         current_row += 1
@@ -783,10 +917,9 @@ class XlsxReport:
         worksheet.insert_image(
             row=current_row, col=starting_column,
             filename=dds_logo_path,
-            options={'x_scale': 0.4, 'y_scale': 0.4, 'decorative': True, 'object_position': 2})
+            options={'x_scale': 0.6, 'y_scale': 0.6, 'decorative': True, 'object_position': 2})
 
         # Add date
-        current_row += 1
         worksheet.write(current_row, starting_column + 1, 'Date')
         date_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         worksheet.write(current_row, starting_column + 2, date_time)
@@ -800,6 +933,39 @@ class XlsxReport:
         current_row += 1
         worksheet.write(current_row, starting_column + 1,'Documentation')
         worksheet.write(current_row, starting_column + 2, self.REPO_DOC)
+
+        # Add number of tests
+
+        # Find the total number of unique tests by looking for a
+        # (publisher, subscriber) pair where both are the same
+        test_count = 0
+        for key, value in self.__data.product_summary_dict.items():
+            if key[0] == key[1]:
+                test_count = value.get_total_tests()
+                break
+        current_row += 1
+        worksheet.write(current_row, starting_column + 1,'Unique tests count')
+        worksheet.write(current_row, starting_column + 2, test_count)
+
+        # add legend
+        current_row += 2
+        worksheet.write(current_row, starting_column + 1,
+                'Single-Product Tests',
+                self.__formats['bold'])
+        worksheet.write(current_row, starting_column + 2,
+                'Results where each product is tested only with itself')
+        current_row += 1
+        worksheet.write(current_row, starting_column + 1,
+                'Cross-Product Tests',
+                self.__formats['bold'])
+        worksheet.write(current_row, starting_column + 2,
+                'Results where each product is tested against all others (including itself)')
+        current_row += 1
+        worksheet.write(current_row, starting_column + 1,
+                'Format X / Y / Z',
+                self.__formats['bold'])
+        worksheet.write(current_row, starting_column + 2,
+                'Represents test passed / supported / total')
 
     def add_static_data_description_worksheet(self,
             worksheet: xlsxwriter.Workbook.worksheet_class,
@@ -820,14 +986,13 @@ class XlsxReport:
         worksheet.write(
             current_row, starting_column + 1,
             'Test Title', self.__formats['product_subtitle'])
-
         dir_name = pathlib.Path(__file__).resolve().parent.name
-        if dir_name == "dds-rtps":
+        if dir_name == 'dds-rtps':
             worksheet.write_url(
                 current_row, starting_column + 2,
                 'https://omg-dds.github.io/dds-rtps/test_description.html',
                 string="Click here for full test descriptions")
-        elif dir_name == "dds-xtypes":
+        elif dir_name == 'dds-xtypes':
             worksheet.write_url(
                 current_row, starting_column + 2,
                 'https://omg-dds.github.io/dds-xtypes/test_description.html',
@@ -846,7 +1011,8 @@ class XlsxReport:
             obj = getattr(test_suite, test_dict)
             if isinstance(obj, dict) and test_dict != '__builtins__':
                 for test_name in obj.keys():
-                    worksheet.write(current_row, col, test_name, self.__formats['bold'])
+                    full_name = f'{test_dict}_{test_name}'
+                    worksheet.write(current_row, col, full_name, self.__formats['bold'])
                     current_row += 1
 
     def add_title_description_worksheet(self,

@@ -6,7 +6,7 @@
 # https://github.com/omg-dds/dds-rtps/blob/master/LICENSE.md
 #
 #################################################################
-from rtps_test_utilities import ReturnCode
+from interoperability_test_utilities import ReturnCode
 import test_suite_functions as tsf
 
 xtypes_v2_extensibility_test_suite = {
