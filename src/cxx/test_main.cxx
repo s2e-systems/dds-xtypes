@@ -1191,7 +1191,10 @@ public:
 
 #if defined(TWINOAKS_COREDX)
     if ( options->disable_type_info )
-      dw_qos.rtps_writer.send_typeobj_v2 = 0;
+      {
+        dw_qos.rtps_writer.send_typeobj_v1 = 0;
+        dw_qos.rtps_writer.send_typeobj_v2 = 0;
+      }
 #endif
     
     printf("Create writer for topic: %s type: %s\n", options->topic_name, options->type_name );
@@ -1281,7 +1284,10 @@ public:
     
 #if defined(TWINOAKS_COREDX)
     if ( options->disable_type_info )
-      dr_qos.rtps_reader.send_typeobj_v2 = 0;
+      {
+        dr_qos.rtps_reader.send_typeobj_v1 = 0;
+        dr_qos.rtps_reader.send_typeobj_v2 = 0;
+      }
 #endif
 
     printf("Create reader for topic: %s\n", options->topic_name );

@@ -58,11 +58,7 @@ TypeConsistency_get_default(void) {
 
 void disable_type_information(DDS::DomainParticipantQos &dp_qos)
 {
-#if (COREDX_DDS_VERSION_MAJOR >= 6)
-  dp_qos.discovery.enable_typelookup_service = 0;
-#else
   /* TODO: has to be done at reader/writer qos */
-#endif
 }
 
 void set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
