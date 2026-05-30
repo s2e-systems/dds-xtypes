@@ -8,6 +8,7 @@
 #define DDS_BOOLEAN_FALSE        (0)
 #define LISTENER_STATUS_MASK_ALL (ALL_STATUS)
 
+#define CONFIGURE_PARTICIPANT_FACTORY config_dpf();
 
 void StringSeq_push(DDS::StringSeq  &string_seq, const char *elem)
 {
@@ -27,6 +28,21 @@ const char *get_qos_policy_name(DDS_QosPolicyId_t policy_id)
 {
   return DDS_qos_policy_str(policy_id);
 }
+
+void
+config_dpf()
+{
+  /* Some tests require us to allow assignment that would reduce the fidelity of a key field.
+   * Our default is not to allow this, but it is configurable.
+   * Until we resolve some ambiguity/interpretation in the spec, we will need this option to
+   * pass these tests:
+   *  - xtypes_v2_struct_test_suite_struct_key_string_3 
+   *  - xtypes_v2_struct_test_suite_struct_key_enum_2 
+   *  - xtypes_v2_struct_test_suite_struct_key_seq_2
+   */
+  setenv( "COREDX_ALLOW_LOSSY_KEY", "1", 1 );
+}
+
 
 DDS::TypeConsistencyEnforcementQosPolicy
 TypeConsistency_get_default(void) {
