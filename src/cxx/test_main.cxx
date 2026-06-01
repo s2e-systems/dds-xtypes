@@ -1067,11 +1067,11 @@ public:
     DomainParticipantQos dp_qos;
     dpf->get_default_participant_qos(dp_qos);
 
+    set_type_object_version(dp_qos, options->type_object_version);
+
     if (options->disable_type_info) {
         disable_type_information(dp_qos);
     }
-
-    set_type_object_version(dp_qos, options->type_object_version);
 
     dp = dpf->create_participant( options->domain_id, dp_qos, &dp_listener, LISTENER_STATUS_MASK_ALL );
     if (dp == NULL) {
