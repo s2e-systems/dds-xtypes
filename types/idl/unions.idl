@@ -3,7 +3,7 @@ module Test {
   @final
   union union_primitives_final switch (uint8) {
     case 0x01:
-      octet x1;
+      uint8 x1;
     case 0x02:
       uint16 x2;
     case 0x03:
@@ -11,7 +11,7 @@ module Test {
     case 0x04:
       uint64 x4;
     case 0x05:
-      char x5;
+      int8 x5;
     case 0x06:
       int16 x6;
     case 0x07:
@@ -25,14 +25,18 @@ module Test {
     case 0x0b:
       double x11;
     case 0x0c:
-      double x12;
+      long double x12;
+    case 0x0d:
+      octet x13;
+    case 0x0e:
+      char x14;
   };
 
 
   @appendable
   union union_primitives_appendable switch (uint8) {
     case 0x01:
-      octet x1;
+      uint8 x1;
     case 0x02:
       uint16 x2;
     case 0x03:
@@ -40,7 +44,7 @@ module Test {
     case 0x04:
       uint64 x4;
     case 0x05:
-      char x5;
+      int8 x5;
     case 0x06:
       int16 x6;
     case 0x07:
@@ -54,14 +58,18 @@ module Test {
     case 0x0b:
       double x11;
     case 0x0c:
-      double x12;
+      long double x12;
+    case 0x0d:
+      octet x13;
+    case 0x0e:
+      char x14;
   };
 
 
   @mutable
   union union_primitives_mutable switch (uint8) {
     case 0x01:
-      octet x1;
+      uint8 x1;
     case 0x02:
       uint16 x2;
     case 0x03:
@@ -69,7 +77,7 @@ module Test {
     case 0x04:
       uint64 x4;
     case 0x05:
-      char x5;
+      int8 x5;
     case 0x06:
       int16 x6;
     case 0x07:
@@ -83,7 +91,11 @@ module Test {
     case 0x0b:
       double x11;
     case 0x0c:
-      double x12;
+      long double x12;
+    case 0x0d:
+      octet x13;
+    case 0x0e:
+      char x14;
   };
 
 

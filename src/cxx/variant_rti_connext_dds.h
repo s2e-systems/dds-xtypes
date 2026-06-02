@@ -308,9 +308,7 @@ check_data(DDS::DynamicData *dd, const char *data_folder, const char *data_file)
     retval = *dd == *data_check;
 
     if (!retval) {
-        // print received data and expected data for debugging
-        std::cout << "Received data:" << std::endl;
-        print_data(dd);
+        // print expected data for debugging
         std::cout << "Expected data:" << std::endl;
         print_data(data_check);
     }

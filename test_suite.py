@@ -479,7 +479,7 @@ xtypes_v2_array_test_suite = {
         'common_args' : ['--type-folder types --type-file arrays'],
         'apps' : ['pub-exe -P -t test -y Test::F_S__array10_F_S__array20_uint32 --data-folder data --data-file array_array_num_10_20',
                   'sub-exe -S -t test -y Test::F_S__array10_F_S__array20_uint32_alt --data-folder data --data-file array_array_num_10_20_alt'],
-        'expected_codes' : [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
+        'expected_codes' : [ReturnCode.OK, ReturnCode.OK],
         'check_function' : tsf.data_is_correct,
         'title' : '',
         'description' : ''
@@ -620,7 +620,7 @@ xtypes_v2_sequence_test_suite = {
         'common_args' : ['--type-folder types --type-file sequences'],
         'apps' : ['pub-exe -P -t test -y Test::F_S__seq10_F_S__seq20_uint32 --data-folder data --data-file array_array_num_10_20',
                   'sub-exe -S -t test -y Test::F_S__seq10_F_S__seq20_uint32_alt --data-folder data --data-file array_array_num_10_20_alt'],
-        'expected_codes' : [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
+        'expected_codes' : [ReturnCode.OK, ReturnCode.OK],
         'check_function' : tsf.data_is_correct,
         'title' : '',
         'description' : ''
@@ -1227,7 +1227,7 @@ xtypes_v2_union_test_suite = {
         'common_args': ['--type-folder types --type-file unions'],
         'apps': ['pub-exe -P -t test -y Test::union_1 --data-folder data --data-file union_x1',
                  'sub-exe -S -t test -y Test::union_2 --data-folder data --data-file union_x1'],
-        'expected_codes': [ReturnCode.INCONSISTENT_TOPIC, ReturnCode.INCONSISTENT_TOPIC],
+        'expected_codes': [ReturnCode.OK, ReturnCode.OK],
         'check_function': tsf.data_is_correct,
         'title': '',
         'description': ''
