@@ -709,8 +709,8 @@ def add_type_id_results_to_suite(
         pub_val = pub_map.get((name, kind), 'missing')
         sub_val = sub_map.get((name, kind), 'missing')
 
-        pub_display = 'PUB_UNSUPPORTED' if 'not found' in pub_val else pub_val
-        sub_display = 'SUB_UNSUPPORTED' if 'not found' in sub_val else sub_val
+        pub_display = 'PUB_UNSUPPORTED_FEATURE' if 'not found' in pub_val else pub_val
+        sub_display = 'SUB_UNSUPPORTED_FEATURE' if 'not found' in sub_val else sub_val
 
         message = \
             '<table> ' \
@@ -726,12 +726,19 @@ def add_type_id_results_to_suite(
                 '</tr> ' \
             '</table>'
 
-        if pub_val != sub_val:
-            case.result = [junitparser.Failure(message)]
-            print(f'{case.name} : ERROR')
-        else:
+        if pub_val == sub_val and pub_val != 'not found':
             case.system_out = message
             print(f'{case.name} : OK')
+        else:
+            case.result = [junitparser.Failure(message)]
+            if pub_display == 'PUB_UNSUPPORTED_FEATURE' and sub_display == 'SUB_UNSUPPORTED_FEATURE':
+                print(f'{case.name} : PUB/SUB UNSUPPORTED')
+            elif pub_display == 'PUB_UNSUPPORTED_FEATURE':
+                print(f'{case.name} : PUB UNSUPPORTED')
+            elif sub_display == 'SUB_UNSUPPORTED_FEATURE':
+                print(f'{case.name} : SUB UNSUPPORTED')
+            else:
+                print(f'{case.name} : NOT_EQUAL')
 
         suite.add_testcase(case)
 
