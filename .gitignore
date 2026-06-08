@@ -78,3 +78,6 @@ doc/detailed_report.rst
 doc/test_results.rst
 test_description.rst
 doc/test_description.rst
+
+# Rust target files
+target/

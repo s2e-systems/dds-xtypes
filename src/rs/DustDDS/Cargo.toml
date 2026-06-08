@@ -1,0 +1,13 @@
+[package]
+name = "dust_dds_test_main"
+version = "0.1.0"
+description = "OMG DDS_XTYPES Interoperability"
+edition = "2024"
+rust-version = "1.87"
+
+[dependencies]
+clap = { version = "4.5.47", features = ["derive", "string"] }
+ctrlc = "3.4"
+dust_dds = { version = "0.16.0", git = "https://github.com/s2e-systems/dust-dds", branch = "main", features = [
+    "xtypes-xml",
+] }
