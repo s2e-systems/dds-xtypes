@@ -18,7 +18,7 @@ jobs:
     - name: Generate timestamp file
       run: date '+%Y-%m-%d-%H_%M_%S' > timestamp
     - name: Upload timestamp file
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       with:
         name: timestamp
         path: |
@@ -34,12 +34,12 @@ jobs:
 
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v5
-    - uses: actions/setup-python@v5
+      uses: actions/checkout@v7
+    - uses: actions/setup-python@v6
       with:
         python-version: '3.11.4'
     - name: Download shape_main executables
-      uses: robinraju/release-downloader@v1.10
+      uses: robinraju/release-downloader@v1.13
       with:
         latest: true
         fileName: "*"
@@ -95,11 +95,11 @@ jobs:
         echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=2 ==="
         python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 2
     - name: Download timestamp
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v8
       with:
         name: timestamp
     - name: Upload report
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       with:
         name: junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}
         path: |
@@ -116,13 +116,13 @@ jobs:
     needs: run_tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Download artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: junit_report-*
           merge-multiple: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11.4'
       - name: Install Python requirements
@@ -141,49 +141,21 @@ jobs:
           python3 generate_xlsx_report.py --input junit_xtypes_typeid_interoperability_report_to1.xml --output xtypes_typeid_interoperability_report_to1.xlsx
           junitparser merge junit_typeid_report_to2-*.xml junit_xtypes_typeid_interoperability_report_to2.xml
           python3 generate_xlsx_report.py --input junit_xtypes_typeid_interoperability_report_to2.xml --output xtypes_typeid_interoperability_report_to2.xlsx
-      - name: Generate HTML report (xcdr1_to1)
-        uses: AutoModality/action-xunit-viewer@v1
-        with:
-          results: ./junit_xtypes_interoperability_report_xcdr1_to1.xml
-          output: ./xtypes_interoperability_report_xcdr1_to1.html
-          fail: false
-      - name: Generate HTML report (xcdr1_to2)
-        uses: AutoModality/action-xunit-viewer@v1
-        with:
-          results: ./junit_xtypes_interoperability_report_xcdr1_to2.xml
-          output: ./xtypes_interoperability_report_xcdr1_to2.html
-          fail: false
-      - name: Generate HTML report (xcdr2_to1)
-        uses: AutoModality/action-xunit-viewer@v1
-        with:
-          results: ./junit_xtypes_interoperability_report_xcdr2_to1.xml
-          output: ./xtypes_interoperability_report_xcdr2_to1.html
-          fail: false
-      - name: Generate HTML report (xcdr2_to2)
-        uses: AutoModality/action-xunit-viewer@v1
-        with:
-          results: ./junit_xtypes_interoperability_report_xcdr2_to2.xml
-          output: ./xtypes_interoperability_report_xcdr2_to2.html
-          fail: false
-      - name: Generate HTML report (TypeId to1)
-        uses: AutoModality/action-xunit-viewer@v1
-        with:
-          results: ./junit_xtypes_typeid_interoperability_report_to1.xml
-          output: ./xtypes_typeid_interoperability_report_to1.html
-          fail: false
-      - name: Generate HTML report (TypeId to2)
-        uses: AutoModality/action-xunit-viewer@v1
-        with:
-          results: ./junit_xtypes_typeid_interoperability_report_to2.xml
-          output: ./xtypes_typeid_interoperability_report_to2.html
-          fail: false
+      - name: Generate HTML reports
+        run: |
+          npx xunit-viewer --results=./junit_xtypes_interoperability_report_xcdr1_to1.xml --output=./xtypes_interoperability_report_xcdr1_to1.html
+          npx xunit-viewer --results=./junit_xtypes_interoperability_report_xcdr1_to2.xml --output=./xtypes_interoperability_report_xcdr1_to2.html
+          npx xunit-viewer --results=./junit_xtypes_interoperability_report_xcdr2_to1.xml --output=./xtypes_interoperability_report_xcdr2_to1.html
+          npx xunit-viewer --results=./junit_xtypes_interoperability_report_xcdr2_to2.xml --output=./xtypes_interoperability_report_xcdr2_to2.html
+          npx xunit-viewer --results=./junit_xtypes_typeid_interoperability_report_to1.xml --output=./xtypes_typeid_interoperability_report_to1.html
+          npx xunit-viewer --results=./junit_xtypes_typeid_interoperability_report_to2.xml --output=./xtypes_typeid_interoperability_report_to2.html
       - name: Download timestamp
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: timestamp
       - name: Attach the report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: complete_xtypes_interoperability_report
           path: |
