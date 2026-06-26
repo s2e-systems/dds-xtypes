@@ -6,11 +6,11 @@ on:
       publishers:
         description: Publishers to use
         type: string
-        default: '["connext_dds","toc_coredx_dds", "eclipse_cyclone"]'
+        default: '["connext_dds","toc_coredx_dds", "eclipse_cyclone", "opendds"]'
       subscribers:
         description: Subscribers to use
         type: string
-        default: '["connext_dds","toc_coredx_dds", "eclipse_cyclone"]'
+        default: '["connext_dds","toc_coredx_dds", "eclipse_cyclone", "opendds"]'
 jobs:
   generate_timestamp:
     runs-on: ubuntu-latest
