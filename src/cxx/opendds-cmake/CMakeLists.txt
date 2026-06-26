@@ -11,4 +11,4 @@ target_compile_definitions(shape_main
   PRIVATE OPENDDS
 )
 
-target_link_libraries(shape_main OpenDDS::Rtps_Udp)
+target_link_libraries(shape_main OpenDDS::Rtps_Udp OpenDDS::XTypes_Xml)
