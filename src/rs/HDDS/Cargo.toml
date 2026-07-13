@@ -1,0 +1,34 @@
+[package]
+name = "hdds-xtypes-interop"
+version = "1.1.5"
+edition = "2021"
+description = "HDDS OMG DDS-XTypes interoperability test application"
+license = "Apache-2.0 OR MIT"
+
+[[bin]]
+name = "hdds_xtypes_shape_main_linux"
+path = "src/main.rs"
+
+# `hdds` is consumed from GitHub by default so CI and external contributors
+# can build without Olivier's working tree. `hdds 1.1.5` is not yet on
+# crates.io (latest published is 1.1.2); pulling `branch = "master"` keeps
+# this binary compiling against the in-flight wire changes needed for OMG
+# interop. Switch to `version = "1.1.5"` once it is published on crates.io.
+# Enable TypeObject-resolver-backed structural assignability (e.g. enum1x10 <-> enum2x10).
+# Build with: --features xtypes-structural-assignability
+# Propagates the same feature name to the hdds crate.
+[features]
+xtypes-structural-assignability = ["hdds/xtypes-structural-assignability"]
+
+[dependencies]
+hdds = { git = "https://github.com/hdds-team/hdds", branch = "master", default-features = false, features = ["xtypes"] }
+quick-xml = "0.36"
+log = "0.4"
+env_logger = "0.11"
+signal-hook = "0.3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
