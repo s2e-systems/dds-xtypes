@@ -853,17 +853,11 @@ public:
 
           case OPT_PERIODIC_ANNOUNCEMENT:
             {
-              int converted_param = 0;
+              unsigned int converted_param = 0;
               if (sscanf(optarg, "%u", &converted_param) == 0) {
                 logger.log_message("unrecognized value for periodic-announcement "
                                    + std::string(1, optarg[0]),
                                    Verbosity::ERROR);
-                parse_ok = false;
-              } else if (converted_param < 0) {
-                logger.log_message("incorrect value for periodic-announcement, "
-                            "it must be >=0 "
-                            + std::to_string(converted_param),
-                            Verbosity::ERROR);
                 parse_ok = false;
               }
               periodic_announcement_period_us = (useconds_t) converted_param * 1000;
