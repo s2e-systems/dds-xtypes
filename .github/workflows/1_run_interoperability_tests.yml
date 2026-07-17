@@ -74,30 +74,69 @@ jobs:
         if [[ "${subscriber_exe,,}" == *opendds* && "${publisher_exe,,}" == *connext_dds* ]]; then
           extra_args="--periodic-announcement 5000"
         fi
-        # Run interoperability tests (xcdr1, type_object_version 1)
-        output_file=junit_report_xcdr1_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=1 type_object_version=1 ==="
-        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 1 -x 1
-        # Run interoperability tests (xcdr1, type_object_version 2)
-        output_file=junit_report_xcdr1_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=1 type_object_version=2 ==="
-        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 1
-        # Run interoperability tests (xcdr2, type_object_version 1)
-        output_file=junit_report_xcdr2_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=2 type_object_version=1 ==="
-        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 1 -x 2
-        # Run interoperability tests (xcdr2, type_object_version 2)
-        output_file=junit_report_xcdr2_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running: pub=$pub_name sub=$sub_name xcdr=2 type_object_version=2 ==="
-        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 2
-        # Run TypeId tests (type_object_version 1)
-        output_file=junit_typeid_report_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=1 ==="
-        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 1
-        # Run TypeId tests (type_object_version 2)
-        output_file=junit_typeid_report_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-        echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=2 ==="
-        python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 2
+        xcdr1_enabled=true
+        xcdr2_enabled=true
+        to1_enabled=true
+        to2_enabled=true
+        if [[ "${publisher_exe,,}" == *opendds* || "${subscriber_exe,,}" == *opendds* ]]; then
+          xcdr1_enabled=false
+        fi
+        if [[ "$xcdr1_enabled" == true ]]; then
+          if [[ "$to1_enabled" == true ]]; then
+            # Run interoperability tests (xcdr1, type_object_version 1)
+            output_file=junit_report_xcdr1_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+            echo "=== Running: pub=$pub_name sub=$sub_name xcdr=1 type_object_version=1 ==="
+            python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 1 -x 1
+          else
+            echo "=== Skipping XCDR1/TypeObjectV1 tests ==="
+          fi
+          if [[ "$to2_enabled" == true ]]; then
+            # Run interoperability tests (xcdr1, type_object_version 2)
+            output_file=junit_report_xcdr1_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+            echo "=== Running: pub=$pub_name sub=$sub_name xcdr=1 type_object_version=2 ==="
+            python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 1
+          else
+            echo "=== Skipping XCDR1/TypeObjectV2 tests ==="
+          fi
+        else
+          echo "=== Skipping XCDR1 tests ==="
+        fi
+        if [[ "$xcdr2_enabled" == true ]]; then
+          if [[ "$to1_enabled" == true ]]; then
+            # Run interoperability tests (xcdr2, type_object_version 1)
+            output_file=junit_report_xcdr2_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+            echo "=== Running: pub=$pub_name sub=$sub_name xcdr=2 type_object_version=1 ==="
+            python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 1 -x 2
+          else
+            echo "=== Skipping XCDR2/TypeObjectV1 tests ==="
+          fi
+          if [[ "$to2_enabled" == true ]]; then
+            # Run interoperability tests (xcdr2, type_object_version 2)
+            output_file=junit_report_xcdr2_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+            echo "=== Running: pub=$pub_name sub=$sub_name xcdr=2 type_object_version=2 ==="
+            python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --type-object-version 2 -x 2
+          else
+            echo "=== Skipping XCDR2/TypeObjectV2 tests ==="
+          fi
+        else
+          echo "=== Skipping XCDR2 tests ==="
+        fi
+        if [[ "$to1_enabled" == true ]]; then
+          # Run TypeId tests (type_object_version 1)
+          output_file=junit_typeid_report_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+          echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=1 ==="
+          python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 1
+        else
+          echo "=== Skipping TypeId TypeObjectV1 tests ==="
+        fi
+        if [[ "$to2_enabled" == true ]]; then
+          # Run TypeId tests (type_object_version 2)
+          output_file=junit_typeid_report_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+          echo "=== Running TypeId: pub=$pub_name sub=$sub_name type_object_version=2 ==="
+          python3 interoperability_report.py --pub-exe $publisher_exe --sub-exe $subscriber_exe -o $output_file $extra_args --enable-typeid-tests --type-object-version 2
+        else
+          echo "=== Skipping TypeId TypeObjectV2 tests ==="
+        fi
     - name: Download timestamp
       uses: actions/download-artifact@v8
       with:
@@ -107,12 +146,7 @@ jobs:
       with:
         name: junit_report-${{ matrix.publisher }}-${{ matrix.subscriber }}
         path: |
-          ./junit_report_xcdr1_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-          ./junit_report_xcdr1_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-          ./junit_report_xcdr2_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-          ./junit_report_xcdr2_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-          ./junit_typeid_report_to1-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
-          ./junit_typeid_report_to2-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
+          ./*-${{ matrix.publisher }}-${{ matrix.subscriber }}.xml
           ./timestamp
 
   generate_report:
