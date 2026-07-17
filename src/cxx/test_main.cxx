@@ -226,6 +226,7 @@ Logger logger(ERROR);
 #define OPT_TYPE_FILE                0x100A
 #define OPT_DATA_FOLDER              0x100B
 #define OPT_DATA_FILE                0x100C
+#define OPT_PERIODIC_ANNOUNCEMENT    0x100D
 
 static struct option long_opts[] =
   {
@@ -243,6 +244,7 @@ static struct option long_opts[] =
     { "type-file",             required_argument, NULL, OPT_TYPE_FILE              },
     { "data-folder",           required_argument, NULL, OPT_DATA_FOLDER            },
     { "data-file",             required_argument, NULL, OPT_DATA_FILE              },
+    { "periodic-announcement", required_argument, NULL, OPT_PERIODIC_ANNOUNCEMENT  },
     { NULL, 0, NULL, 0 }
   };
 
@@ -281,6 +283,8 @@ public:
 
   int                 type_object_version;
   bool                print_typeid;
+
+  useconds_t          periodic_announcement_period_us;
 
 
 public:
@@ -326,6 +330,8 @@ public:
     disable_type_info = false;
     type_object_version = 2;
     print_typeid = false;
+
+    periodic_announcement_period_us = 0;
   }
 
   //-------------------------------------------------------------
@@ -383,6 +389,8 @@ public:
     printf("   --print-typeid: print typeid (TypeObjectV1) or equivalence hash ");
     printf("                   (TypeObjectV2)\n");
     printf("                          print_typeid\n");
+    printf("   --periodic-announcement <ms> : indicates the periodic participant\n");
+    printf("                                  announcement period in ms. Default 0 (off)\n");
     printf("   -v [e|d]        : set log message verbosity [e: ERROR, d: DEBUG]\n");
   }
 
@@ -843,6 +851,25 @@ public:
             print_typeid = true;
             break;
 
+          case OPT_PERIODIC_ANNOUNCEMENT:
+            {
+              int converted_param = 0;
+              if (sscanf(optarg, "%u", &converted_param) == 0) {
+                logger.log_message("unrecognized value for periodic-announcement "
+                                   + std::string(1, optarg[0]),
+                                   Verbosity::ERROR);
+                parse_ok = false;
+              } else if (converted_param < 0) {
+                logger.log_message("incorrect value for periodic-announcement, "
+                            "it must be >=0 "
+                            + std::to_string(converted_param),
+                            Verbosity::ERROR);
+                parse_ok = false;
+              }
+              periodic_announcement_period_us = (useconds_t) converted_param * 1000;
+              break;
+            }
+
           case 'h':
             {
               print_usage(argv[0]);
@@ -882,6 +909,7 @@ public:
                 "\n    Disable type info = " + std::to_string(disable_type_info) +
                 "\n    TypeObject version = " + std::to_string(type_object_version) +
                 "\n    Print Type ID = " + std::to_string(print_typeid) +
+                "\n    Periodic Announcement Period = " + std::to_string(periodic_announcement_period_us / 1000) + "ms" +
                 "\n    Verbosity = " + QosUtils::to_string(logger.verbosity()),
             Verbosity::DEBUG);
         if (!publish) {
@@ -1078,6 +1106,11 @@ public:
     if (options->disable_type_info) {
         disable_type_information(dp_qos);
     }
+
+#ifdef RTI_CONNEXT_DDS
+    configure_participant_announcements_period(
+            dp_qos, options->periodic_announcement_period_us);
+#endif
 
     dp = dpf->create_participant( options->domain_id, dp_qos, &dp_listener, LISTENER_STATUS_MASK_ALL );
     if (dp == NULL) {
