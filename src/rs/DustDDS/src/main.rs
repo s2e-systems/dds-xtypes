@@ -275,8 +275,8 @@ impl DomainParticipantListener for Listener {}
 fn init_publisher(
     participant: &DomainParticipant,
     options: Options,
-    dynamic_type: DynamicType,
-) -> Result<DataWriter<DynamicData>, InitializeError> {
+    dynamic_type: DynamicType<'static>,
+) -> Result<DataWriter<DynamicData<'static>>, InitializeError> {
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
 
@@ -326,9 +326,9 @@ fn init_publisher(
 }
 
 fn run_publisher(
-    data_writer: &DataWriter<DynamicData>,
+    data_writer: &DataWriter<DynamicData<'static>>,
     options: Options,
-    dynamic_type: DynamicType,
+    dynamic_type: DynamicType<'static>,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
     let mut dd = DynamicDataFactory::create_data(dynamic_type);
@@ -356,8 +356,8 @@ fn run_publisher(
 fn init_subscriber(
     participant: &DomainParticipant,
     options: Options,
-    dynamic_type: DynamicType,
-) -> Result<DataReader<DynamicData>, InitializeError> {
+    dynamic_type: DynamicType<'static>,
+) -> Result<DataReader<DynamicData<'static>>, InitializeError> {
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
 
@@ -478,7 +478,7 @@ fn init_subscriber(
 }
 
 fn run_subscriber(
-    data_reader: &DataReader<DynamicData>,
+    data_reader: &DataReader<DynamicData<'static>>,
     options: Options,
     dynamic_type: DynamicType,
     all_done: Receiver<()>,
