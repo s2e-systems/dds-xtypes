@@ -275,7 +275,7 @@ impl DomainParticipantListener for Listener {}
 fn init_publisher(
     participant: &DomainParticipant,
     options: Options,
-    dynamic_type: &'static dyn DynamicType,
+    dynamic_type: DynamicType,
 ) -> Result<DataWriter<DynamicData>, InitializeError> {
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
@@ -328,7 +328,7 @@ fn init_publisher(
 fn run_publisher(
     data_writer: &DataWriter<DynamicData>,
     options: Options,
-    dynamic_type: &'static dyn DynamicType,
+    dynamic_type: DynamicType,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
     let mut dd = DynamicDataFactory::create_data(dynamic_type);
@@ -356,7 +356,7 @@ fn run_publisher(
 fn init_subscriber(
     participant: &DomainParticipant,
     options: Options,
-    dynamic_type: &'static dyn DynamicType,
+    dynamic_type: DynamicType,
 ) -> Result<DataReader<DynamicData>, InitializeError> {
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
@@ -480,7 +480,7 @@ fn init_subscriber(
 fn run_subscriber(
     data_reader: &DataReader<DynamicData>,
     options: Options,
-    dynamic_type: &'static dyn DynamicType,
+    dynamic_type: DynamicType,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
     let mut expected_data = None;
@@ -616,7 +616,7 @@ fn main() -> Result<(), Return> {
     })?;
 
     // Create the type
-    let mut dt: Option<&'static dyn DynamicType> = None;
+    let mut dt: Option<DynamicType> = None;
     if let (Some(type_folder), Some(type_file), Some(type_name)) =
         (&options.type_folder, &options.type_file, &options.type_name)
     {

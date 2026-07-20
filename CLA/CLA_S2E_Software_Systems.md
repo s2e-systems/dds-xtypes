@@ -57,4 +57,4 @@ Name: Stefan Kimmer
 
 Title: Director
 
-Date: Mai 22, 2026
+Date: May 22, 2026
