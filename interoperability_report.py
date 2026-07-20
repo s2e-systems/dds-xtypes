@@ -802,6 +802,13 @@ class Arguments:
                 'If this parameter is not set, it does not add anything to the '
                 'application. The potential values are 1 for TypeObject V1 and '
                 '2 for TypeObject V2.')
+        optional.add_argument('-a', '--periodic-announcement',
+            default=0,
+            required=False,
+            type=int,
+            metavar='periodic_announcement_ms',
+            help='Indicates the periodic participant announcement period in '
+                'ms. Default: 0 (off).')
 
         tests = parser.add_argument_group(title='Test Case and Test Suite')
         tests.add_argument('-s', '--suite',
@@ -905,6 +912,7 @@ def main():
         'data_representation': args.data_representation,
         'type_object_version': args.type_object_version,
         'enable_typeid_tests': args.enable_typeid_tests,
+        'periodic_announcement_ms': args.periodic_announcement,
     }
 
     # The executables's names are supposed to follow the pattern:
@@ -1031,6 +1039,9 @@ def main():
                                 parameters[i] += f' -x {options["data_representation"]}'
                             if not '--type-object-version ' in element and options['type_object_version'] is not None:
                                 parameters[i] += f' --type-object-version {options["type_object_version"]}'
+                            if options['periodic_announcement_ms'] > 0 \
+                                    and not '--periodic-announcement ' in element:
+                                parameters[i] += f' --periodic-announcement {options["periodic_announcement_ms"]}'
 
                         # check if the test is supported or not before running it
                         test_id = f'{test_suite_name}_{test_case_name}'

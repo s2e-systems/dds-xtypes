@@ -60,6 +60,20 @@ disable_type_information(DDS::DomainParticipantQos &dp_qos)
 }
 
 void
+configure_participant_announcements_period(
+        DDS::DomainParticipantQos &dp_qos,
+        useconds_t announcement_period_us)
+{
+    if (announcement_period_us == 0) {
+        return;
+    }
+    dp_qos.discovery_config.participant_liveliness_assert_period.sec =
+            announcement_period_us / 1000000;
+    dp_qos.discovery_config.participant_liveliness_assert_period.nanosec =
+            (announcement_period_us % 1000000) * 1000;
+}
+
+void
 set_type_object_version(DDS::DomainParticipantQos &dp_qos, int version)
 {
     if (version == 1) {
