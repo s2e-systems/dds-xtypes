@@ -480,7 +480,7 @@ fn init_subscriber(
 fn run_subscriber(
     data_reader: &DataReader<DynamicData<'static>>,
     options: Options,
-    dynamic_type: DynamicType,
+    dynamic_type: DynamicType<'static>,
     all_done: Receiver<()>,
 ) -> Result<(), RunningError> {
     let mut expected_data = None;
@@ -616,7 +616,7 @@ fn main() -> Result<(), Return> {
     })?;
 
     // Create the type
-    let mut dt: Option<DynamicType> = None;
+    let mut dt = None;
     if let (Some(type_folder), Some(type_file), Some(type_name)) =
         (&options.type_folder, &options.type_file, &options.type_name)
     {
