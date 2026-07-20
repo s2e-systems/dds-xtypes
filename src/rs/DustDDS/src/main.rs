@@ -622,8 +622,7 @@ fn main() -> Result<(), Return> {
     {
         let file_path = format!("{}/xml/{}.xml", type_folder, type_file);
         let type_xml = std::fs::read_to_string(file_path).unwrap();
-        // This function is unimplemented in dust_dds currently
-        println!("type_name {type_name}");
+
         let type_builder =
             DynamicTypeBuilderFactory::create_type_w_document(&type_xml, type_name, vec![])
                 .unwrap();
