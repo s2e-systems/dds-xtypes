@@ -717,6 +717,8 @@ fn run_subscriber(
                     for sample in samples {
                         if sample.sample_info.valid_data {
                             println!("sample_received()");
+                            println!("sample.data {:?}", sample.data.as_ref().unwrap());
+                            println!("expected_data {:?}", expected_data.as_ref().unwrap());
                             if let Some(expected) = &expected_data {
                                 if sample.data.as_ref() == Some(expected) {
                                     println!("Received sample is the same as loaded");
