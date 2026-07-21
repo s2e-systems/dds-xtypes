@@ -24,7 +24,7 @@ use dust_dds::{
     publication::data_writer::DataWriter,
     subscription::data_reader::DataReader,
     xtypes::dynamic_type::{
-        DynamicData, DynamicDataFactory, DynamicType, DynamicTypeBuilderFactory,
+        DynamicData, DynamicDataFactory, DynamicType, DynamicTypeBuilderFactory, TryConstructKind,
     },
 };
 use std::{
@@ -521,7 +521,6 @@ fn init_subscriber(
     Ok(data_reader)
 }
 
-
 // static void print_sample1_to (struct type_cache *tc, const unsigned char *sample, const DDS_XTypes_CompleteTypeObject *typeobj, struct context *c, const char *label, bool is_base_type, bool is_opt)
 // {
 //   if (print_sample1_simple (sample, typeobj->_d, c, label, NULL, is_opt))
@@ -717,8 +716,6 @@ fn run_subscriber(
                     for sample in samples {
                         if sample.sample_info.valid_data {
                             println!("sample_received()");
-                            println!("sample.data {:?}", sample.data.as_ref().unwrap());
-                            println!("expected_data {:?}", expected_data.as_ref().unwrap());
                             if let Some(expected) = &expected_data {
                                 if sample.data.as_ref() == Some(expected) {
                                     println!("Received sample is the same as loaded");
@@ -831,9 +828,12 @@ fn main() -> Result<(), Return> {
     {
         let file_path = format!("{}/xml/{}.xml", type_folder, type_file);
         let type_xml = std::fs::read_to_string(file_path).unwrap();
-        let type_builder =
+        let mut type_builder =
             DynamicTypeBuilderFactory::create_type_w_document(&type_xml, type_name, vec![])
                 .unwrap();
+        for (_id, member) in type_builder.get_all_members().unwrap() {
+            member.descriptor.try_construct_kind = TryConstructKind::UseDefault;
+        }
         dt = Some(type_builder.build());
     }
 
