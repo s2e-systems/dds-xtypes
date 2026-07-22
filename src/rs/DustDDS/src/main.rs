@@ -311,6 +311,19 @@ impl DomainParticipantListener for Listener {
         );
         core::future::ready(())
     }
+
+    fn on_inconsistent_topic(
+        &mut self,
+        the_topic: dust_dds::dds_async::topic::TopicAsync,
+        _status: dust_dds::infrastructure::status::InconsistentTopicStatus,
+    ) -> impl Future<Output = ()> + Send {
+        println!(
+            "on_inconsistent_topic() topic: '{}'  type: '{}'",
+            the_topic.get_name(),
+            the_topic.get_type_name()
+        );
+        core::future::ready(())
+    }
 }
 
 fn init_publisher(
