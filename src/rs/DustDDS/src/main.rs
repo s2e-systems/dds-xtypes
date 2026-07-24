@@ -15,7 +15,8 @@ use dust_dds::{
             self, DataRepresentationQosPolicy, DurabilityQosPolicy, HistoryQosPolicy,
             HistoryQosPolicyKind, OwnershipQosPolicy, OwnershipQosPolicyKind,
             OwnershipStrengthQosPolicy, PartitionQosPolicy, ReliabilityQosPolicy,
-            XCDR_DATA_REPRESENTATION, XCDR2_DATA_REPRESENTATION,
+            TypeConsistencyEnforcementQosPolicy, TypeConsistencyKind, XCDR_DATA_REPRESENTATION,
+            XCDR2_DATA_REPRESENTATION,
         },
         sample_info::{ANY_INSTANCE_STATE, ANY_SAMPLE_STATE, ANY_VIEW_STATE},
         status::{NO_STATUS, StatusKind},
@@ -455,72 +456,72 @@ fn init_subscriber(
         );
     }
 
-    // // Set type consistency enforcement based on arguments
-    // let mut type_consistency = TypeConsistencyEnforcementQosPolicy::default();
+    // Set type consistency enforcement based on arguments
+    let mut type_consistency = TypeConsistencyEnforcementQosPolicy::default();
 
-    // if let Some(allow_type_coercion) = options.allow_type_coercion {
-    //     match allow_type_coercion {
-    //         TypeConsistencyArg::T => type_consistency.kind = TypeConsistencyKind::AllowTypeCoercion,
-    //         TypeConsistencyArg::F => {
-    //             type_consistency.kind = TypeConsistencyKind::DisallowTypeCoercion
-    //         }
-    //         TypeConsistencyArg::D => {
-    //             type_consistency.kind = TypeConsistencyEnforcementQosPolicy::default().kind
-    //         }
-    //     }
-    // }
-    // if let Some(force_type_validation) = options.force_type_validation {
-    //     match force_type_validation {
-    //         TypeConsistencyArg::T => type_consistency.force_type_validation = true,
-    //         TypeConsistencyArg::F => type_consistency.force_type_validation = false,
-    //         TypeConsistencyArg::D => {
-    //             type_consistency.force_type_validation =
-    //                 TypeConsistencyEnforcementQosPolicy::default().force_type_validation
-    //         }
-    //     }
-    // }
-    // if let Some(ignore_member_names) = options.ignore_member_names {
-    //     match ignore_member_names {
-    //         TypeConsistencyArg::T => type_consistency.ignore_member_names = true,
-    //         TypeConsistencyArg::F => type_consistency.ignore_member_names = false,
-    //         TypeConsistencyArg::D => {
-    //             type_consistency.ignore_member_names =
-    //                 TypeConsistencyEnforcementQosPolicy::default().ignore_member_names
-    //         }
-    //     }
-    // }
-    // if let Some(ignore_seq_bounds) = options.ignore_seq_bounds {
-    //     match ignore_seq_bounds {
-    //         TypeConsistencyArg::T => type_consistency.ignore_sequence_bounds = true,
-    //         TypeConsistencyArg::F => type_consistency.ignore_sequence_bounds = false,
-    //         TypeConsistencyArg::D => {
-    //             type_consistency.ignore_sequence_bounds =
-    //                 TypeConsistencyEnforcementQosPolicy::default().ignore_sequence_bounds
-    //         }
-    //     }
-    // }
-    // if let Some(ignore_str_bounds) = options.ignore_str_bounds {
-    //     match ignore_str_bounds {
-    //         TypeConsistencyArg::T => type_consistency.ignore_string_bounds = true,
-    //         TypeConsistencyArg::F => type_consistency.ignore_string_bounds = false,
-    //         TypeConsistencyArg::D => {
-    //             type_consistency.ignore_string_bounds =
-    //                 TypeConsistencyEnforcementQosPolicy::default().ignore_string_bounds
-    //         }
-    //     }
-    // }
-    // if let Some(prevent_type_widening) = options.prevent_type_widening {
-    //     match prevent_type_widening {
-    //         TypeConsistencyArg::T => type_consistency.prevent_type_widening = true,
-    //         TypeConsistencyArg::F => type_consistency.prevent_type_widening = false,
-    //         TypeConsistencyArg::D => {
-    //             type_consistency.prevent_type_widening =
-    //                 TypeConsistencyEnforcementQosPolicy::default().prevent_type_widening
-    //         }
-    //     }
-    // }
+    if let Some(allow_type_coercion) = options.allow_type_coercion {
+        match allow_type_coercion {
+            TypeConsistencyArg::T => type_consistency.kind = TypeConsistencyKind::AllowTypeCoercion,
+            TypeConsistencyArg::F => {
+                type_consistency.kind = TypeConsistencyKind::DisallowTypeCoercion
+            }
+            TypeConsistencyArg::D => {
+                type_consistency.kind = TypeConsistencyEnforcementQosPolicy::default().kind
+            }
+        }
+    }
+    if let Some(force_type_validation) = options.force_type_validation {
+        match force_type_validation {
+            TypeConsistencyArg::T => type_consistency.force_type_validation = true,
+            TypeConsistencyArg::F => type_consistency.force_type_validation = false,
+            TypeConsistencyArg::D => {
+                type_consistency.force_type_validation =
+                    TypeConsistencyEnforcementQosPolicy::default().force_type_validation
+            }
+        }
+    }
+    if let Some(ignore_member_names) = options.ignore_member_names {
+        match ignore_member_names {
+            TypeConsistencyArg::T => type_consistency.ignore_member_names = true,
+            TypeConsistencyArg::F => type_consistency.ignore_member_names = false,
+            TypeConsistencyArg::D => {
+                type_consistency.ignore_member_names =
+                    TypeConsistencyEnforcementQosPolicy::default().ignore_member_names
+            }
+        }
+    }
+    if let Some(ignore_seq_bounds) = options.ignore_seq_bounds {
+        match ignore_seq_bounds {
+            TypeConsistencyArg::T => type_consistency.ignore_sequence_bounds = true,
+            TypeConsistencyArg::F => type_consistency.ignore_sequence_bounds = false,
+            TypeConsistencyArg::D => {
+                type_consistency.ignore_sequence_bounds =
+                    TypeConsistencyEnforcementQosPolicy::default().ignore_sequence_bounds
+            }
+        }
+    }
+    if let Some(ignore_str_bounds) = options.ignore_str_bounds {
+        match ignore_str_bounds {
+            TypeConsistencyArg::T => type_consistency.ignore_string_bounds = true,
+            TypeConsistencyArg::F => type_consistency.ignore_string_bounds = false,
+            TypeConsistencyArg::D => {
+                type_consistency.ignore_string_bounds =
+                    TypeConsistencyEnforcementQosPolicy::default().ignore_string_bounds
+            }
+        }
+    }
+    if let Some(prevent_type_widening) = options.prevent_type_widening {
+        match prevent_type_widening {
+            TypeConsistencyArg::T => type_consistency.prevent_type_widening = true,
+            TypeConsistencyArg::F => type_consistency.prevent_type_widening = false,
+            TypeConsistencyArg::D => {
+                type_consistency.prevent_type_widening =
+                    TypeConsistencyEnforcementQosPolicy::default().prevent_type_widening
+            }
+        }
+    }
 
-    // data_reader_qos.type_consistency = type_consistency;
+    data_reader_qos.type_consistency = type_consistency;
 
     println!("Create reader for topic: {}", topic_name);
 
@@ -533,168 +534,6 @@ fn init_subscriber(
 
     Ok(data_reader)
 }
-
-// static void print_sample1_to (struct type_cache *tc, const unsigned char *sample, const DDS_XTypes_CompleteTypeObject *typeobj, struct context *c, const char *label, bool is_base_type, bool is_opt)
-// {
-//   if (print_sample1_simple (sample, typeobj->_d, c, label, NULL, is_opt))
-//     return;
-//   switch (typeobj->_d)
-//   {
-//     case DDS_XTypes_TK_ALIAS: {
-//       print_sample1_ti (tc, sample, &typeobj->_u.alias_type.body.common.related_type, 0, c, label, false, is_opt);
-//       break;
-//     }
-//     case DDS_XTypes_TK_SEQUENCE: {
-//       const DDS_XTypes_TypeIdentifier *et = &typeobj->_u.sequence_type.element.common.type;
-//       const dds_sequence_t *p = align (sample, c, _Alignof (dds_sequence_t), sizeof (dds_sequence_t));
-//       struct context c1 = { .key = c->key, .valid_data = c->valid_data, .offset = 0, .maxalign = 1, .needs_comma = false };
-//       if (c->needs_comma) fputc (',', stdout);
-//       if (label) printf ("\"%s\":", label);
-//       printf ("[");
-//       for (uint32_t i = 0; i < p->_length; i++)
-//       {
-//         print_sample1_ti (tc, (const unsigned char *) p->_buffer, et, 0, &c1, NULL, false, false);
-//         finish_sequence_element (&c1);
-//       }
-//       printf ("]");
-//       c->needs_comma = true;
-//       break;
-//     }
-//     case DDS_XTypes_TK_STRUCTURE: {
-//       struct typeinfo *info = type_cache_lookup_typeobj (tc, typeobj);
-//       const DDS_XTypes_CompleteStructType *t = &typeobj->_u.struct_type;
-//       const unsigned char *p = align (sample, c, info->align, info->size);
-//       if (c->needs_comma) fputc (',', stdout);
-//       if (label) printf ("\"%s\":", label);
-//       if (!is_base_type) { printf ("{"); c->needs_comma = false; }
-//       struct context c1 = { .key = c->key, .valid_data = c->valid_data, .offset = 0, .maxalign = 1, .needs_comma = c->needs_comma };
-//       if (t->header.base_type._d != DDS_XTypes_TK_NONE)
-//         print_sample1_ti (tc, p, &t->header.base_type, 0, &c1, NULL, true, false);
-//       for (uint32_t i = 0; i < t->member_seq._length; i++)
-//       {
-//         const DDS_XTypes_CompleteStructMember *m = &t->member_seq._buffer[i];
-//         c1.key = c->key && (m->common.member_flags & DDS_XTypes_IS_KEY);
-//         if (!is_indirect_member (m->common.member_flags)) {
-//           print_sample1_ti (tc, p, &m->common.member_type_id, 0, &c1, *m->detail.name ? m->detail.name : NULL, false, false);
-//         } else {
-//           void const * const *p1 = (const void *) align (p, &c1, _Alignof (void *), sizeof (void *));
-//           if (c1.key || c->valid_data) {
-//             if (*p1 != NULL) { // missing optional/external values are not visible at all in the output
-//               struct context c2 = { .key = c1.key && !is_optional_member (m->common.member_flags), .valid_data = c1.valid_data, .offset = 0, .maxalign = 1, .needs_comma = c1.needs_comma };
-//               print_sample1_ti (tc, *p1, &m->common.member_type_id, 0, &c2, *m->detail.name ? m->detail.name : NULL, false, true);
-//               c1.needs_comma = c2.needs_comma;
-//             }
-//           }
-//         }
-//       }
-//       if (!is_base_type) {
-//         printf ("}");
-//         c1.needs_comma = true;
-//       }
-//       c->needs_comma = c1.needs_comma;
-//       break;
-//     }
-//     case DDS_XTypes_TK_ENUM: {
-//       struct typeinfo *info = type_cache_lookup_typeobj (tc, typeobj);
-//       const DDS_XTypes_CompleteEnumeratedType *t = &typeobj->_u.enumerated_type;
-//       const int *p = align (sample, c, info->align, info->size);
-//       if (c->key || c->valid_data)
-//       {
-//         if (c->needs_comma) fputc (',', stdout);
-//         if (label) printf ("\"%s\":", label);
-//         for (uint32_t l = 0; l < t->literal_seq._length; l++)
-//         {
-//           if (t->literal_seq._buffer[l].common.value == *p)
-//             printf ("\"%s\"", t->literal_seq._buffer[l].detail.name);
-//         }
-//         c->needs_comma = true;
-//       }
-//       break;
-//     }
-//     case DDS_XTypes_TK_BITMASK: {
-//       struct typeinfo *info = type_cache_lookup_typeobj (tc, typeobj);
-//       const DDS_XTypes_CompleteBitmaskType *t = &typeobj->_u.bitmask_type;
-//       const void *p = align (sample, c, info->align, info->size);
-//       if (c->key || c->valid_data)
-//       {
-//         if (c->needs_comma) fputc (',', stdout);
-//         if (label) printf ("\"%s\":", label);
-//         printf ("%"PRIu64, read_bitmask_value (p, t->header.common.bit_bound));
-//         c->needs_comma = true;
-//       }
-//       break;
-//     }
-//     case DDS_XTypes_TK_UNION: {
-//       struct typeinfo *info = type_cache_lookup_typeobj (tc, typeobj);
-//       const DDS_XTypes_CompleteUnionType *t = &typeobj->_u.union_type;
-//       const unsigned char *p = align (sample, c, info->align, info->size);
-//       if (c->needs_comma) fputc (',', stdout);
-//       if (label) printf ("\"%s\":", label);
-//       printf ("{");
-//       int32_t disc_value = 0;
-//       struct context c1 = { .key = c->key, .valid_data = c->valid_data, .offset = 0, .maxalign = 1, .needs_comma = false };
-//       if (t->discriminator.common.type_id._d == DDS_XTypes_EK_COMPLETE)
-//       {
-//         struct typeinfo *info_disc = type_cache_lookup_typeid (tc, &t->discriminator.common.type_id);
-//         if (info_disc->typeobj->_d == DDS_XTypes_TK_ENUM)
-//         {
-//           disc_value = * (int32_t *) p;
-//         }
-//         else if (info_disc->typeobj->_d == DDS_XTypes_TK_BITMASK)
-//         {
-//           if (info_disc->typeobj->_u.bitmask_type.header.common.bit_bound > 32)
-//             disc_value = (int32_t) (* (int64_t *) p);
-//           else if (info_disc->typeobj->_u.bitmask_type.header.common.bit_bound > 16)
-//             disc_value = * (int32_t *) p;
-//           else if (info_disc->typeobj->_u.bitmask_type.header.common.bit_bound > 8)
-//             disc_value = * (int16_t *) p;
-//           else
-//             disc_value = * (int8_t *) p;
-//         }
-//         else
-//         {
-//           printf ("unsupported union discriminant value %u\n", info_disc->typeobj->_d);
-//           abort ();
-//         }
-//         print_sample1_to (tc, p, info_disc->typeobj, &c1, "_d", false, false);
-//       }
-//       else if (!print_sample1_simple (p, t->discriminator.common.type_id._d, &c1, "_d", &disc_value, false))
-//       {
-//         abort ();
-//       }
-//       const DDS_XTypes_CompleteUnionMember *m = find_union_member_for_disc (t, disc_value);
-//       if (m != NULL)
-//       {
-//         const unsigned char *data = p + type_cache_union_data_offset (tc, t);
-//         struct context c2 = { .key = c1.key, .valid_data = c1.valid_data, .offset = 0, .maxalign = 1, .needs_comma = c1.needs_comma };
-//         if (!is_indirect_member (m->common.member_flags))
-//         {
-//           print_sample1_ti (tc, data, &m->common.type_id, 0, &c2, *m->detail.name ? m->detail.name : NULL, false, false);
-//         }
-//         else
-//         {
-//           void const * const *p1 = (const void *) align (data, &c2, _Alignof (void *), sizeof (void *));
-//           if ((c2.key || c2.valid_data) && *p1 != NULL)
-//           {
-//             struct context c3 = { .key = c2.key && !is_optional_member (m->common.member_flags), .valid_data = c2.valid_data, .offset = 0, .maxalign = 1, .needs_comma = c2.needs_comma };
-//             print_sample1_ti (tc, *p1, &m->common.type_id, 0, &c3, *m->detail.name ? m->detail.name : NULL, false, true);
-//             c2.needs_comma = c3.needs_comma;
-//           }
-//         }
-//         c1.needs_comma = c2.needs_comma;
-//       }
-//       printf ("}");
-//       c->needs_comma = true;
-//     }
-//   }
-// }
-
-// void dtl_print_sample (struct dyntypelib *dtl, bool valid_data, const void *sample, const DDS_XTypes_CompleteTypeObject *typeobj)
-// {
-//   struct context c1 = { .valid_data = valid_data, .key = true, .offset = 0, .maxalign = 1, .needs_comma = false };
-//   print_sample1_to (dtl->typecache, sample, typeobj, &c1, NULL, false, false);
-//   printf ("\n");
-// }
 
 fn run_subscriber(
     data_reader: &DataReader<DynamicData<'static>>,
@@ -739,10 +578,10 @@ fn run_subscriber(
                         }
                         previous_handle = Some(sample.sample_info.instance_handle);
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(100));
                 }
                 Err(_) => break,
             }
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
     Ok(())
