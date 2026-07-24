@@ -28,12 +28,12 @@ use dust_dds::{
         DynamicData, DynamicDataFactory, DynamicType, DynamicTypeBuilderFactory, TryConstructKind,
     },
 };
+use std::io::{self, Write};
 use std::{
     fmt::Debug,
     process::{ExitCode, Termination},
     sync::mpsc::Receiver,
 };
-use std::io::{self, Write};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 #[clap(rename_all = "kebab_case")]
@@ -279,12 +279,10 @@ impl DomainParticipantListener for Listener {
     ) -> impl Future<Output = ()> + Send {
         let topic_name = the_writer.get_topic().get_name();
         let type_name = the_writer.get_topic().get_type_name();
-        let mut stdout = io::stdout().lock();
-        writeln!(
-            stdout,
+        println!(
             "on_publication_matched() topic: '{}'  type: '{}' : matched readers {} (change = {})",
             topic_name, type_name, status.current_count, status.current_count_change
-        ).unwrap();
+        );
         core::future::ready(())
     }
 
@@ -295,12 +293,10 @@ impl DomainParticipantListener for Listener {
     ) -> impl Future<Output = ()> + Send {
         let topic_name = the_reader.get_topicdescription().get_name();
         let type_name = the_reader.get_topicdescription().get_type_name();
-        let mut stdout = io::stdout().lock();
-        writeln!(
-            stdout,
+        println!(
             "on_subscription_matched() topic: '{}'  type: '{}' : matched writers {} (change = {})",
             topic_name, type_name, status.current_count, status.current_count_change
-        ).unwrap();
+        );
         core::future::ready(())
     }
 
@@ -311,12 +307,10 @@ impl DomainParticipantListener for Listener {
     ) -> impl Future<Output = ()> + Send {
         let topic_name = the_reader.get_topicdescription().get_name();
         let type_name = the_reader.get_topicdescription().get_type_name();
-        let mut stdout = io::stdout().lock();
-        writeln!(
-            stdout,
+        println!(
             "on_liveliness_changed() topic: '{}'  type: '{}' : (alive = {}, not_alive = {}",
             topic_name, type_name, status.alive_count, status.not_alive_count
-        ).unwrap();
+        );
         core::future::ready(())
     }
 
@@ -325,13 +319,11 @@ impl DomainParticipantListener for Listener {
         the_topic: dust_dds::dds_async::topic::TopicAsync,
         _status: dust_dds::infrastructure::status::InconsistentTopicStatus,
     ) -> impl Future<Output = ()> + Send {
-        let mut stdout = io::stdout().lock();
-        writeln!(
-            stdout,
+        println!(
             "on_inconsistent_topic() topic: '{}'  type: '{}'",
             the_topic.get_name(),
             the_topic.get_type_name()
-        ).unwrap();
+        );
         core::future::ready(())
     }
 }
@@ -341,6 +333,8 @@ fn init_publisher(
     options: Options,
     dynamic_type: DynamicType<'static>,
 ) -> Result<DataWriter<DynamicData<'static>>, InitializeError> {
+    let mut stdout_lock = io::stdout().lock();
+
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
 
@@ -353,8 +347,7 @@ fn init_publisher(
         dynamic_type,
     )?;
 
-    println!("Create topic: {}", topic_name);
-    let _ = io::stdout().lock();
+    writeln!(stdout_lock, "Create topic: {}", topic_name).unwrap();
 
     let publisher_qos = QosKind::Specific(PublisherQos {
         partition: options.partition_qos_policy(),
@@ -378,11 +371,12 @@ fn init_publisher(
         data_writer_qos.ownership_strength = options.ownership_strength_qos_policy();
     }
 
-    println!(
+    writeln!(
+        stdout_lock,
         "Create writer for topic: {} type: {}",
         topic_name, type_name
-    );
-    let _ = io::stdout().lock();
+    )
+    .unwrap();
 
     let data_writer = publisher.create_datawriter::<DynamicData>(
         &topic,
@@ -428,6 +422,8 @@ fn init_subscriber(
     options: Options,
     dynamic_type: DynamicType<'static>,
 ) -> Result<DataReader<DynamicData<'static>>, InitializeError> {
+    let mut stdout_lock = io::stdout().lock();
+
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
 
@@ -442,8 +438,7 @@ fn init_subscriber(
         )
         .unwrap();
 
-    println!("Create topic: {}", topic_name, );
-    let _ = io::stdout().lock();
+    writeln!(stdout_lock, "Create topic: {}", topic_name).unwrap();
 
     let subscriber_qos = QosKind::Specific(SubscriberQos {
         partition: options.partition_qos_policy(),
@@ -536,8 +531,7 @@ fn init_subscriber(
 
     data_reader_qos.type_consistency = type_consistency;
 
-    println!("Create reader for topic: {}", topic_name);
-    let _ = io::stdout().lock();
+    writeln!(stdout_lock, "Create reader for topic: {}", topic_name).unwrap();
 
     let data_reader = subscriber.create_datareader::<DynamicData>(
         &topic,
@@ -582,14 +576,11 @@ fn run_subscriber(
                     for sample in samples {
                         if sample.sample_info.valid_data {
                             println!("sample_received()");
-                            let _ = io::stdout().lock();
                             if let Some(expected) = &expected_data {
                                 if sample.data.as_ref() == Some(expected) {
                                     println!("Received sample is the same as loaded");
-                                    let _ = io::stdout().lock();
                                 } else {
                                     println!("Received sample is not the same as loaded");
-                                    let _ = io::stdout().lock();
                                 }
                             }
                         }
@@ -739,7 +730,6 @@ fn main() -> Result<(), Return> {
     }
 
     println!("Done.");
-    let _ = io::stdout().lock();
 
     Ok(())
 }
