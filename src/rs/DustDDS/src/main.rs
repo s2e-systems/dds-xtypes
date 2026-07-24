@@ -28,7 +28,6 @@ use dust_dds::{
         DynamicData, DynamicDataFactory, DynamicType, DynamicTypeBuilderFactory, TryConstructKind,
     },
 };
-use std::io::{self, Write};
 use std::{
     fmt::Debug,
     process::{ExitCode, Termination},
@@ -333,10 +332,14 @@ fn init_publisher(
     options: Options,
     dynamic_type: DynamicType<'static>,
 ) -> Result<DataWriter<DynamicData<'static>>, InitializeError> {
-    let mut stdout_lock = io::stdout().lock();
-
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
+
+    println!("Create topic: {}", topic_name);
+    println!(
+        "Create writer for topic: {} type: {}",
+        topic_name, type_name
+    );
 
     let topic = participant.create_dynamic_topic(
         &topic_name,
@@ -346,8 +349,6 @@ fn init_publisher(
         NO_STATUS,
         dynamic_type,
     )?;
-
-    writeln!(stdout_lock, "Create topic: {}", topic_name).unwrap();
 
     let publisher_qos = QosKind::Specific(PublisherQos {
         partition: options.partition_qos_policy(),
@@ -370,13 +371,6 @@ fn init_publisher(
     if options.ownership_qos_policy().kind == OwnershipQosPolicyKind::Exclusive {
         data_writer_qos.ownership_strength = options.ownership_strength_qos_policy();
     }
-
-    writeln!(
-        stdout_lock,
-        "Create writer for topic: {} type: {}",
-        topic_name, type_name
-    )
-    .unwrap();
 
     let data_writer = publisher.create_datawriter::<DynamicData>(
         &topic,
@@ -408,7 +402,6 @@ fn run_publisher(
     while all_done.try_recv().is_err() {
         if options.print_writer_samples {
             println!(" Wrote:");
-            let _ = io::stdout().lock();
         }
         // Write dynamic data
         data_writer.write(dd.clone(), None).ok();
@@ -422,10 +415,11 @@ fn init_subscriber(
     options: Options,
     dynamic_type: DynamicType<'static>,
 ) -> Result<DataReader<DynamicData<'static>>, InitializeError> {
-    let mut stdout_lock = io::stdout().lock();
-
     let topic_name = options.topic_name.clone().unwrap_or("test".to_string());
     let type_name = options.type_name.clone().unwrap();
+
+    println!("Create topic: {}", topic_name);
+    println!("Create reader for topic: {}", topic_name);
 
     let topic = participant
         .create_dynamic_topic(
@@ -437,8 +431,6 @@ fn init_subscriber(
             dynamic_type,
         )
         .unwrap();
-
-    writeln!(stdout_lock, "Create topic: {}", topic_name).unwrap();
 
     let subscriber_qos = QosKind::Specific(SubscriberQos {
         partition: options.partition_qos_policy(),
@@ -530,8 +522,6 @@ fn init_subscriber(
     }
 
     data_reader_qos.type_consistency = type_consistency;
-
-    writeln!(stdout_lock, "Create reader for topic: {}", topic_name).unwrap();
 
     let data_reader = subscriber.create_datareader::<DynamicData>(
         &topic,
