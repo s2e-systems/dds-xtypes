@@ -948,7 +948,7 @@ def main():
     # applications. A TestSuite contains a collection of TestCases.
     suite = junitparser.TestSuite(f"{name_publisher}---{name_subscriber}")
 
-    timeout = 20
+    timeout = 10
     now = datetime.now()
 
     _manifest_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'unsupported_test_manifest')

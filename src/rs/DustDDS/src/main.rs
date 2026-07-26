@@ -402,6 +402,7 @@ fn run_publisher(
     while all_done.try_recv().is_err() {
         if options.print_writer_samples {
             println!(" Wrote:");
+            println!("{:?}", dd);
         }
         // Write dynamic data
         data_writer.write(dd.clone(), None).ok();
