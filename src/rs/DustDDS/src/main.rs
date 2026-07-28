@@ -565,7 +565,7 @@ fn run_subscriber(
             match read_result {
                 Ok(samples) => {
                     for sample in samples {
-                        if sample.sample_info.valid_data {
+                        if sample.sample_info.valid_data && sample.data.is_some() {
                             println!("sample_received()");
                             if let Some(expected) = &expected_data {
                                 if sample.data.as_ref() == Some(expected) {
