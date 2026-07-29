@@ -459,6 +459,8 @@ fn init_subscriber(
 
     // Set type consistency enforcement based on arguments
     let mut type_consistency = TypeConsistencyEnforcementQosPolicy::default();
+    // Note: The default of the DDS XTypes standard is false
+    type_consistency.ignore_member_names = true;
 
     if let Some(allow_type_coercion) = options.allow_type_coercion {
         match allow_type_coercion {
@@ -466,59 +468,42 @@ fn init_subscriber(
             TypeConsistencyArg::F => {
                 type_consistency.kind = TypeConsistencyKind::DisallowTypeCoercion
             }
-            TypeConsistencyArg::D => {
-                type_consistency.kind = TypeConsistencyEnforcementQosPolicy::default().kind
-            }
+            TypeConsistencyArg::D => (),
         }
     }
     if let Some(force_type_validation) = options.force_type_validation {
         match force_type_validation {
             TypeConsistencyArg::T => type_consistency.force_type_validation = true,
             TypeConsistencyArg::F => type_consistency.force_type_validation = false,
-            TypeConsistencyArg::D => {
-                type_consistency.force_type_validation =
-                    TypeConsistencyEnforcementQosPolicy::default().force_type_validation
-            }
+            TypeConsistencyArg::D => (),
         }
     }
     if let Some(ignore_member_names) = options.ignore_member_names {
         match ignore_member_names {
             TypeConsistencyArg::T => type_consistency.ignore_member_names = true,
             TypeConsistencyArg::F => type_consistency.ignore_member_names = false,
-            TypeConsistencyArg::D => {
-                type_consistency.ignore_member_names =
-                    TypeConsistencyEnforcementQosPolicy::default().ignore_member_names
-            }
+            TypeConsistencyArg::D => (),
         }
     }
     if let Some(ignore_seq_bounds) = options.ignore_seq_bounds {
         match ignore_seq_bounds {
             TypeConsistencyArg::T => type_consistency.ignore_sequence_bounds = true,
             TypeConsistencyArg::F => type_consistency.ignore_sequence_bounds = false,
-            TypeConsistencyArg::D => {
-                type_consistency.ignore_sequence_bounds =
-                    TypeConsistencyEnforcementQosPolicy::default().ignore_sequence_bounds
-            }
+            TypeConsistencyArg::D => (),
         }
     }
     if let Some(ignore_str_bounds) = options.ignore_str_bounds {
         match ignore_str_bounds {
             TypeConsistencyArg::T => type_consistency.ignore_string_bounds = true,
             TypeConsistencyArg::F => type_consistency.ignore_string_bounds = false,
-            TypeConsistencyArg::D => {
-                type_consistency.ignore_string_bounds =
-                    TypeConsistencyEnforcementQosPolicy::default().ignore_string_bounds
-            }
+            TypeConsistencyArg::D => (),
         }
     }
     if let Some(prevent_type_widening) = options.prevent_type_widening {
         match prevent_type_widening {
             TypeConsistencyArg::T => type_consistency.prevent_type_widening = true,
             TypeConsistencyArg::F => type_consistency.prevent_type_widening = false,
-            TypeConsistencyArg::D => {
-                type_consistency.prevent_type_widening =
-                    TypeConsistencyEnforcementQosPolicy::default().prevent_type_widening
-            }
+            TypeConsistencyArg::D => (),
         }
     }
 
