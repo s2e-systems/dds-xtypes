@@ -636,6 +636,45 @@ impl From<ParsingError> for Return {
     }
 }
 
+fn get_explicit_try_construct_members(
+    xml_str: &str,
+    type_name: &str,
+) -> std::collections::HashSet<String> {
+    let mut explicit_members = std::collections::HashSet::new();
+    let Ok(doc) = roxmltree::Document::parse(xml_str) else {
+        return explicit_members;
+    };
+
+    let target_name = type_name.rsplit("::").next().unwrap_or(type_name);
+
+    for node in doc.descendants() {
+        if node.is_element()
+            && (node.tag_name().name() == "struct" || node.tag_name().name() == "union")
+        {
+            if node.attribute("name") == Some(target_name) {
+                for child in node.descendants() {
+                    if child.is_element() {
+                        let tag = child.tag_name().name();
+                        if tag == "member" || tag == "discriminator" {
+                            if child.attribute("tryConstruct").is_some() {
+                                let m_name = if tag == "discriminator" {
+                                    Some("discriminator")
+                                } else {
+                                    child.attribute("name")
+                                };
+                                if let Some(name) = m_name {
+                                    explicit_members.insert(name.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    explicit_members
+}
+
 fn main() -> Result<(), Return> {
     let (tx, rx) = std::sync::mpsc::channel();
     ctrlc::set_handler(move || {
@@ -667,8 +706,13 @@ fn main() -> Result<(), Return> {
         let mut type_builder =
             DynamicTypeBuilderFactory::create_type_w_document(&type_xml, type_name, vec![])
                 .unwrap();
+        // Because Connext is having UseDefault as default forcefully change that here too. The XTypes specification as
+        // Discard specified as default in 7.2.2.7 Try Construct behavior
+        let explicit_members = get_explicit_try_construct_members(&type_xml, type_name);
         for (_id, member) in type_builder.get_all_members().unwrap() {
-            member.descriptor.try_construct_kind = TryConstructKind::UseDefault;
+            if !explicit_members.contains(member.descriptor.name) {
+                member.descriptor.try_construct_kind = TryConstructKind::UseDefault;
+            }
         }
         dt = Some(type_builder.build());
     }

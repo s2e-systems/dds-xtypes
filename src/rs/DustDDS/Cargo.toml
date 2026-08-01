@@ -8,6 +8,5 @@ rust-version = "1.87"
 [dependencies]
 clap = { version = "4.5.47", features = ["derive", "string"] }
 ctrlc = "3.4"
-dust_dds = { version = "0.16.0", features = [
-    "xtypes-xml",
-]}
+dust_dds = { version = "0.16.0", features = ["xtypes-xml"] }
+roxmltree = "0.20"
