@@ -1,6 +1,7 @@
 use clap::{Parser, ValueEnum};
 use ctrlc;
 use dust_dds::{
+    configuration::DustDdsConfigurationBuilder,
     dds_async::topic_description::TopicDescriptionAsync,
     domain::{
         domain_participant::DomainParticipant,
@@ -15,11 +16,11 @@ use dust_dds::{
             self, DataRepresentationQosPolicy, DurabilityQosPolicy, HistoryQosPolicy,
             HistoryQosPolicyKind, OwnershipQosPolicy, OwnershipQosPolicyKind,
             OwnershipStrengthQosPolicy, PartitionQosPolicy, ReliabilityQosPolicy,
-            TypeConsistencyEnforcementQosPolicy, TypeConsistencyKind, XCDR_DATA_REPRESENTATION,
-            XCDR2_DATA_REPRESENTATION,
+            TypeConsistencyEnforcementQosPolicy, TypeConsistencyKind, XCDR2_DATA_REPRESENTATION,
+            XCDR_DATA_REPRESENTATION,
         },
         sample_info::{ANY_INSTANCE_STATE, ANY_SAMPLE_STATE, ANY_VIEW_STATE},
-        status::{NO_STATUS, StatusKind},
+        status::{StatusKind, NO_STATUS},
         time::DurationKind,
     },
     publication::data_writer::DataWriter,
@@ -574,7 +575,12 @@ fn run_subscriber(
 fn initialize(options: &Options) -> Result<DomainParticipant, InitializeError> {
     let participant_factory = DomainParticipantFactory::get_instance();
 
-    // Set domain participant factory QoS if needed
+    if options.disable_type_info {
+        let configuration = DustDdsConfigurationBuilder::new()
+            .enable_type_information(false)
+            .build()?;
+        *participant_factory.get_mut_configuration() = configuration;
+    }
 
     let participant = participant_factory.create_participant(
         options.domain_id,
@@ -635,8 +641,6 @@ impl From<ParsingError> for Return {
         }
     }
 }
-
-
 
 fn main() -> Result<(), Return> {
     let (tx, rx) = std::sync::mpsc::channel();
