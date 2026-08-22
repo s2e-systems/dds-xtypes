@@ -483,7 +483,7 @@ fn init_subscriber(
         match ignore_member_names {
             TypeConsistencyArg::T => type_consistency.ignore_member_names = true,
             TypeConsistencyArg::F => type_consistency.ignore_member_names = false,
-            TypeConsistencyArg::D => (),
+            TypeConsistencyArg::D => type_consistency.ignore_member_names = false,
         }
     }
     if let Some(ignore_seq_bounds) = options.ignore_seq_bounds {
